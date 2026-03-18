@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SRC_DIR="$SCRIPT_DIR/src"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -59,10 +62,22 @@ if [ -d "$COMMANDS_DIR" ]; then
     echo -e "  ${RED}✗${NC} commands/pace/$rel"
     REMOVED=$((REMOVED + 1))
   done < <(find "$COMMANDS_DIR" -name "*.md" -type f)
-  # Remove the pace/ directory if now empty
   find "$COMMANDS_DIR" -type d -empty -delete 2>/dev/null || true
 else
   echo "  No PACE commands found at ${COMMANDS_DIR}"
+fi
+
+# --- Remove PACE agents (only the ones shipped by PACE) ---
+if [ -d "$SRC_DIR/agents" ]; then
+  while IFS= read -r file; do
+    rel="${file#$SRC_DIR/agents/}"
+    dest="$DEST/agents/$rel"
+    if [ -e "$dest" ]; then
+      rm "$dest"
+      echo -e "  ${RED}✗${NC} agents/$rel"
+      REMOVED=$((REMOVED + 1))
+    fi
+  done < <(find "$SRC_DIR/agents" -name "*.md" -type f)
 fi
 
 # --- Optional runtime cleanup ---
@@ -71,7 +86,7 @@ if [ "$INCLUDE_RUNTIME" = true ]; then
   if [ -d "$PACE_DIR" ]; then
     rm -rf "$PACE_DIR"
     echo -e "  ${RED}✗${NC} .pace/ (registry, plans, state)"
-    ((REMOVED++))
+    REMOVED=$((REMOVED + 1))
   fi
 fi
 

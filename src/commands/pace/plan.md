@@ -72,15 +72,15 @@ registry. Use this as a guide:
 
 | Work type | Planning team |
 |---|---|
-| Backend / API | `@engineering-software-architect`, `@engineering-backend-architect` |
-| Frontend / UI | `@engineering-software-architect`, `@design-ux-architect` |
-| Full-stack feature | `@engineering-software-architect`, `@engineering-backend-architect`, `@design-ux-architect` |
-| Design / UX | `@design-ux-architect`, `@design-ui-designer` |
-| Infrastructure | `@engineering-software-architect`, `@engineering-devops-automator` |
-| Marketing / content | `@product-manager`, `@marketing-content-creator` |
-| Product feature | `@engineering-software-architect`, `@product-manager` |
+| Backend / API | `@Software Architect`, `@Backend Architect` |
+| Frontend / UI | `@Software Architect`, `@UX Architect` |
+| Full-stack feature | `@Software Architect`, `@Backend Architect`, `@UX Architect` |
+| Design / UX | `@UX Architect`, `@UI Designer` |
+| Infrastructure | `@Software Architect`, `@DevOps Automator` |
+| Marketing / content | `@Product Manager`, `@Content Creator` |
+| Product feature | `@Software Architect`, `@Product Manager` |
 
-`@engineering-software-architect` should be on the team for any technical work.
+`@Software Architect` should be on the team for any technical work.
 Load the relevant Tier 2 division files from `.pace/agents/` to confirm the
 exact agent names before spawning.
 
@@ -156,12 +156,53 @@ The requirements that drove these drafts are:
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
 ---
 
-## Stage 6 — Report
+## Stage 6 — Approval
 
 Once the synthesiser completes, read `.pace/PLAN.md` and present it to the
-user. Ask: **"Does this plan look right, or would you like to adjust anything?"**
+user in full.
 
-If they request changes, edit PLAN.md directly — do not re-run the full
-pipeline for minor adjustments.
+Then ask:
+
+```
+How would you like to proceed?
+
+  [A] Approve — lock this plan and begin tracking state
+  [E] Edit — describe your changes and I'll update the plan
+  [R] Reject — discard this plan and start over
+```
+
+**If they choose A (Approve):**
+Write `.pace/STATE.md` using this format:
+
+```markdown
+# STATE
+_Plan: {plan title}_
+_Started: {ISO timestamp}_
+
+## Status
+in_progress
+
+## Tasks
+- [ ] 1: {task title} — @{agent}
+- [ ] 2: {task title} — @{agent}
+- [ ] 3: {task title} — @{agent}
+- [ ] 4: {task title} — @{agent}
+
+## Completed
+(none yet)
+
+## Blockers
+(none)
+```
+
+Then tell the user: **"Plan approved. Run `/pace:execute` to start."**
+
+**If they choose E (Edit):**
+Ask what they'd like to change. Make the edits to `.pace/PLAN.md` directly.
+Re-present the updated plan and ask the approval question again.
+
+**If they choose R (Reject):**
+Confirm with the user, then delete `.pace/PLAN.md` and tell them they can
+run `/pace:plan` again when ready.
 
 </process>

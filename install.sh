@@ -83,6 +83,13 @@ while IFS= read -r file; do
   check_conflict "$file" "$DEST/commands/$rel"
 done < <(find "$SRC_DIR/commands" -name "*.md" -type f)
 
+if [ -d "$SRC_DIR/agents" ]; then
+  while IFS= read -r file; do
+    rel="${file#$SRC_DIR/agents/}"
+    check_conflict "$file" "$DEST/agents/$rel"
+  done < <(find "$SRC_DIR/agents" -name "*.md" -type f)
+fi
+
 if [ ${#CONFLICTS[@]} -gt 0 ]; then
   echo -e "${YELLOW}The following files already exist:${NC}"
   for f in "${CONFLICTS[@]}"; do
@@ -116,6 +123,9 @@ install_files() {
 }
 
 install_files "$SRC_DIR/commands" "$DEST/commands" "commands"
+if [ -d "$SRC_DIR/agents" ]; then
+  install_files "$SRC_DIR/agents" "$DEST/agents" "agents"
+fi
 
 # --- Summary ---
 echo ""
