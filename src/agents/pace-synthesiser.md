@@ -41,12 +41,13 @@ Before writing anything, work through the drafts and identify:
 - **Scope creep** — tasks that are out of scope or too large. Flag rather
   than include.
 
-## Step 4 — Order and limit
+## Step 4 — Order and assign dependencies
 
-Arrange the surviving tasks in logical execution order (dependencies first).
-**Maximum 4 tasks.** If more than 4 remain after deduplication, keep the
-highest-priority ones and record the dropped tasks in the Notes section so
-the user can plan them separately.
+Arrange the surviving tasks in logical execution order.
+For each task, identify which other tasks it must wait for and set
+`Depends on:` accordingly. Tasks with no dependencies will run in parallel
+with other dependency-free tasks — so be accurate. Independent tasks should
+say `Depends on: none`.
 
 ## Step 5 — Write PLAN.md
 
@@ -63,20 +64,24 @@ One sentence describing what this plan achieves when complete.
 
 ### Task 1: {short title}
 **Agent:** @agent-name
+**Depends on:** none
 **Files:** comma-separated list of files likely affected, or "TBD"
+**Allowed tools:** Read, Write, Edit, Bash, Glob, Grep
 **Success criteria:**
 - Observable outcome — describes what must be TRUE, not what was done
 - Observable outcome
 
 ### Task 2: {short title}
 **Agent:** @agent-name
+**Depends on:** 1
 **Files:** ...
+**Allowed tools:** Read, Write, Edit
 **Success criteria:**
 - ...
 
 ## Notes
 - Any constraints or decisions captured during planning
-- Any tasks dropped due to the 4-task limit (with reason)
+- Any tasks dropped due to being out of scope (with reason)
 - Any gaps flagged that were not covered
 - Any agent name substitutions made
 ```
@@ -86,7 +91,8 @@ One sentence describing what this plan achieves when complete.
 Re-read the written PLAN.md and confirm:
 - Every agent name exists in the registry
 - Every task has at least one success criterion
-- Task count is 2-4
+- Every task has a `Depends on:` field
+- Every task has an `Allowed tools:` field scoped to what the work actually needs
 - The objective matches the requirements passed in
 
 Report back a one-line summary: how many tasks, which agents assigned,

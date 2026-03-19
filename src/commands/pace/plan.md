@@ -8,6 +8,7 @@ allowed-tools:
   - Bash
   - Glob
   - Task
+  - AskUserQuestion
 ---
 
 <objective>
@@ -57,10 +58,10 @@ before asking the next. Do not batch them.
 5. **Rough scope check — does this feel like:**
    - A small focused change (1-2 days)
    - A medium feature (3-5 days)
-   - Something larger that probably needs splitting into multiple plans
+   - Something larger that spans multiple weeks or teams
 
-   If they say larger → tell them PACE plans cover 2-4 tasks maximum and ask
-   them to describe the first slice of work to plan now.
+   If they say larger → ask them to describe the first meaningful slice of
+   work to plan now. A good slice delivers value on its own.
 
 Capture all answers as `{requirements}` — a structured summary you will pass
 to each planning agent.
@@ -117,8 +118,10 @@ One sentence describing which aspect of the work you are planning.
 
 ### Task: {short title}
 **Priority:** high | medium | low
+**Depends on:** task numbers this must wait for, or "none"
 **Files likely affected:** comma-separated list, or "unknown"
 **Agent:** @agent-name-from-registry (the specialist who should implement this)
+**Allowed tools:** comma-separated list of tools this task needs (e.g. Read, Write, Edit, Bash, Glob, Grep)
 **Success criteria:**
 - Observable outcome 1
 - Observable outcome 2
@@ -133,8 +136,9 @@ Any constraints, risks, or decisions that the synthesiser should factor in.
 Anything else relevant from your domain perspective.
 ```
 
-Propose 1-3 tasks. Do not pad with unnecessary tasks.
+Propose as many tasks as the work genuinely requires. Do not pad with unnecessary tasks.
 Only include tasks within your domain expertise.
+Mark dependencies accurately — independent tasks will be run in parallel.
 ---
 
 Wait for all parallel Tasks to complete before proceeding.
@@ -161,14 +165,18 @@ Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
 Once the synthesiser completes, read `.pace/PLAN.md` and present it to the
 user in full.
 
-Then ask:
+Then use the AskUserQuestion tool to ask:
 
 ```
-How would you like to proceed?
-
-  [A] Approve — lock this plan and begin tracking state
-  [E] Edit — describe your changes and I'll update the plan
-  [R] Reject — discard this plan and start over
+question: "How would you like to proceed with this plan?"
+header: "Plan review"
+options:
+  - label: "Approve"
+    description: "Lock this plan and begin tracking state. Run /pace:execute when ready."
+  - label: "Edit"
+    description: "Describe your changes and I'll update the plan, then ask again."
+  - label: "Reject"
+    description: "Discard this plan and start over."
 ```
 
 **If they choose A (Approve):**

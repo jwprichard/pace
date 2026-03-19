@@ -9,7 +9,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 - **Orchestrator never implements** — every task is delegated to a specialist agent. The orchestrator routes; it doesn't code, write, or design.
 - **Agent routing is native** — the planner discovers installed agents and assigns agent hints at plan time, not after.
 - **Bring your own agents** — PACE routes to whatever is installed in `~/.claude/agents/` and `.claude/agents/`. If no agent fits, the planner flags it rather than falling back to direct implementation.
-- **Plans are small** — 2–4 tasks maximum. Bigger work gets split.
+- **Tasks are atomic** — each task has one agent owner, is completable in one session, and has observable success criteria. Plan size is not artificially limited.
 - **State is simple** — a single `STATE.md`. No state machine.
 - **Verification is goal-backward** — success criteria describe what must be true, not what was done.
 
