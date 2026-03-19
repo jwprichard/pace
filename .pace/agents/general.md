@@ -15,3 +15,4 @@
 | @gsd-research-synthesizer | Synthesizes research outputs from parallel researcher agents into SUMMARY.md. Spawned by /gsd:new-project after 4 researcher agents complete. |
 | @gsd-roadmapper | Creates project roadmaps with phase breakdown, requirement mapping, success criteria derivation, and coverage validation. Spawned by /gsd:new-project orchestrator. |
 | @gsd-verifier | Verifies phase goal achievement through goal-backward analysis. Checks codebase delivers what phase promised, not just that tasks completed. Creates VERIFICATION.md report. |
+| @pace-synthesiser | Reads domain expert draft plans and synthesises them into a single coherent PLAN.md. Spawned by /pace:plan after all parallel planners complete. |

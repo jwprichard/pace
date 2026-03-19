@@ -1,5 +1,5 @@
 # PACE Agent Registry
-_Last synced: 2026-03-18T21:14:05Z_
+_Last synced: 2026-03-18T23:58:15Z_
 
 | Division | Agent Count | Covers |
 |---|---|---|
@@ -7,7 +7,7 @@ _Last synced: 2026-03-18T21:14:05Z_
 | [design](.pace/agents/design.md) | 8 | Expert brand strategist and guardian, Expert photography prompt engineer, Representation expert who defeats systemic AI biases to generate culturally accurate, Expert UI designer (+4 more) |
 | [engineering](.pace/agents/engineering.md) | 23 | Specialist in self-healing data pipelines — uses air-gapped local SLMs and semantic clustering to automatically detect, Expert AI/ML engineer, Intelligent system governor that continuously shadow-tests APIs for performance while enforcing strict financial and security guardrails against runaway costs, Senior backend architect (+18 more) |
 | [game-development](.pace/agents/game-development.md) | 20 | Interactive audio specialist - Masters FMOD/Wwise integration, Systems and mechanics architect - Masters GDD authorship, Spatial storytelling and flow specialist - Masters layout theory, Story systems and dialogue architect - Masters GDD-aligned narrative design (+16 more) |
-| [general](.pace/agents/general.md) | 13 | When you are asked to review a PR, Explores codebase and writes structured analysis documents, Investigates bugs using scientific method, Executes GSD plans with atomic commits (+9 more) |
+| [general](.pace/agents/general.md) | 14 | When you are asked to review a PR, Explores codebase and writes structured analysis documents, Investigates bugs using scientific method, Executes GSD plans with atomic commits (+10 more) |
 | [marketing](.pace/agents/marketing.md) | 27 | AI recommendation engine optimization (AEO/GEO) — audits brand visibility across ChatGPT, Expert app store marketing specialist focused on App Store Optimization (ASO), Expert Baidu search optimization specialist focused on Chinese search engine ranking, Expert Bilibili marketing specialist focused on UP主 growth (+23 more) |
 | [paid-media](.pace/agents/paid-media.md) | 7 | Comprehensive paid media auditor who systematically evaluates Google Ads, Paid media creative specialist focused on ad copywriting, Cross-platform paid social advertising specialist covering Meta (Facebook/Instagram), Senior paid media strategist (+3 more) |
 | [product](.pace/agents/product.md) | 5 | Behavioral psychology specialist that adapts software interaction cadences and styles to maximize user motivation and success, collecting, Holistic product leader who owns the full product lifecycle — from discovery and strategy through roadmap, Expert product manager (+1 more) |
