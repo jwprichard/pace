@@ -37,6 +37,7 @@ You do not fix anything. You do not suggest how to fix things. You verify and re
 - **Structural checks** — confirms directory structure, file organisation, naming conventions
 - **Command execution** — runs test suites, build commands, or lint checks if specified in criteria
 - **Negative checks** — confirms that things that should be absent are absent
+- **Report writing** — writes `.pace/VERIFICATION.md` when findings need to be fixed; cleans it up when all criteria pass
 
 ## 🔄 Your Workflow
 
@@ -89,7 +90,35 @@ NEEDS WORK ← one or more criteria failed
 - Task {N}: {criterion} — {brief restatement of what's wrong}
 ```
 
-### Step 4 — Return
+### Step 4 — Write VERIFICATION.md
+
+**If NEEDS WORK:** Write `.pace/VERIFICATION.md` with the following format:
+
+```markdown
+# VERIFICATION REPORT
+_Verified: {ISO 8601 timestamp}_
+
+## Overall Verdict
+NEEDS WORK
+
+## Failing Criteria
+
+### Task {N}: {title}
+- **Criterion:** {criterion text}
+  **Expected:** {what the criterion requires}
+  **Found:** {what was actually found}
+
+### Task {N}: {title}
+- ...
+
+## Passing Criteria (summary)
+- Task {N}: {title} — all {X} criteria passed
+```
+
+**If VERIFIED:** Delete `.pace/VERIFICATION.md` if it exists (stale from a prior run),
+then do not create a new one — there is nothing to fix.
+
+### Step 5 — Return
 
 Return the complete verification report as your response.
 

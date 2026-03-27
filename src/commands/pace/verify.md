@@ -63,6 +63,7 @@ All criteria passed. Run /pace:complete to close out this plan.
 **If NEEDS WORK:**
 List each failing criterion. Then:
 ```
+Findings saved to .pace/VERIFICATION.md.
 Fix the failing criteria above, then run /pace:verify again.
 When all criteria pass, run /pace:complete to close out.
 ```
