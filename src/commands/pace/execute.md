@@ -23,6 +23,9 @@ Every task goes to a specialist agent via the Task tool.
 
 <process>
 
+> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> This applies to all specialist agents and all documentation-specialist patch calls.
+
 ## Stage 1 — Pre-flight
 
 Read `.pace/PLAN.md`. If it does not exist, stop and tell the user to run `/pace:plan` first.
@@ -34,6 +37,18 @@ Check `## Status` in STATE.md:
 - If `complete` → tell the user the plan is already finished and suggest `/pace:verify`
 - If `blocked` → tell the user a task is blocked, show the blocker from `## Blockers`,
   and ask whether they want to retry or skip
+
+### Staleness check
+
+If `.pace/PROJECT.md` exists:
+- Read the `_Commit:_` line to get the stored hash
+- Run: `git rev-parse --short HEAD`
+- If the hashes differ → warn the user:
+  ```
+  Warning: PROJECT.md is out of date (stored: {stored hash}, current: {current hash}).
+  Agents will use stale codebase context. Consider running /pace:scan to refresh.
+  ```
+  Then continue — this is a warning, not a blocker.
 
 ## Stage 2 — Load Tasks and Build Waves
 
@@ -93,6 +108,9 @@ For each task in the wave, build its context from PLAN.md:
 - `**Allowed tools:**` — tools this task is permitted to use
 - `**Success criteria:**` — the observable outcomes
 
+If `.pace/PROJECT.md` exists, read the `## Stack` and `## Structure` sections
+to prepend as codebase context in each agent's prompt.
+
 Spawn all tasks in the wave as **simultaneous parallel Task calls** using this
 prompt for each (substitute all `{...}` placeholders):
 
@@ -102,6 +120,10 @@ You are executing **Task {number}: {title}** as part of a PACE plan.
 ## Allowed Tools
 
 {allowed tools from PLAN.md}
+
+## Codebase Context
+
+{stack and structure sections from PROJECT.md, or "Not available — run /pace:scan to generate."}
 
 ## Your Assignment
 
@@ -138,6 +160,21 @@ For each task in the wave:
 ```
 
 Call TaskUpdate for this task: set status to `completed`.
+
+Then spawn `pace-documentation-specialist` as a Task in patch mode:
+
+```
+Patch mode. Task just completed.
+Task: {title}
+Agent: {agent}
+Files: {files from PLAN.md}
+Summary: {completion summary returned by the specialist}
+Update .pace/PROJECT.md to reflect any changes introduced by this task.
+```
+
+(Spawn this as a fire-and-forget parallel Task — do not wait for it before
+processing the next task in the wave outcome loop. If PROJECT.md does not
+exist, the specialist will skip silently.)
 
 **On failure:** Edit STATE.md — change `[~]` to `[!]`. Record the error in
 `## Blockers`:

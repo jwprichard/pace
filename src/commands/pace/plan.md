@@ -22,6 +22,9 @@ team and synthesise their output.
 
 <process>
 
+> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> This applies to all agent spawns without exception — planners, synthesiser, and any others.
+
 ## Stage 1 — Pre-flight
 
 Check that the agent registry exists:
@@ -33,38 +36,108 @@ Clear any existing draft files from a previous run.
 
 ## Stage 2 — Interview
 
-Ask the user the following questions **one at a time**. Wait for each answer
-before asking the next. Do not batch them.
+### 2a — Parse the prompt
 
-1. **What are you building or changing?**
-   (Free-form. Encourage detail — the more context, the better the plan.)
+Read the argument passed to `/pace:plan` (if any). From it, extract what is
+already known and what is genuinely unclear.
 
-2. **What does success look like when this is done?**
-   (Looking for observable outcomes, not implementation steps.)
+Build a working picture:
+- **What** — the thing being built or changed (as specific as possible)
+- **Domain** — frontend, backend, infra, etc. (infer if not stated)
+- **Scope signals** — any mentioned files, components, services, or constraints
+- **Assumptions** — things you are inferring that the user did not state explicitly
+- **Open questions** — aspects that are unclear and will materially affect the plan
 
-3. **What's the primary domain of this work?**
-   Offer options to help them choose:
-   - Backend / API / data
-   - Frontend / UI
-   - Full-stack feature
-   - Design / UX
-   - Infrastructure / DevOps
-   - Marketing / content
-   - Other (ask them to describe)
+If no argument was provided, ask a single open question first:
+> "What are you building or changing?"
+Then treat their answer as the prompt and proceed.
 
-4. **Are there any constraints, dependencies, or decisions already made?**
-   (Tech stack, existing patterns to follow, things to avoid, etc.)
+### 2b — State your understanding
 
-5. **Rough scope check — does this feel like:**
-   - A small focused change (1-2 days)
-   - A medium feature (3-5 days)
-   - Something larger that spans multiple weeks or teams
+Before asking anything, tell the user what you already know:
 
-   If they say larger → ask them to describe the first meaningful slice of
-   work to plan now. A good slice delivers value on its own.
+```
+I understand you want to {concise summary of the work}.
 
-Capture all answers as `{requirements}` — a structured summary you will pass
-to each planning agent.
+I'll assume:
+- {assumption 1}
+- {assumption 2}
+
+I have a few questions about the parts that aren't clear yet.
+```
+
+Skip this step if nothing meaningful was provided.
+
+### 2c — Ask targeted questions
+
+Identify 2–4 genuine unknowns — things that are unclear from the prompt and
+will materially affect how the plan is structured. Ask about these only.
+
+**Do not ask about things already answered by the prompt.**
+If the user said "add dark mode to the settings page", do not ask what they are
+building. Do ask how they want the preference persisted if that is unclear.
+
+For each unknown, use AskUserQuestion with:
+- A specific, direct question about that unknown
+- 3–4 pre-filled options that represent the most likely answers given the context
+- An "Other" option for anything not covered
+
+Ask one question at a time. Wait for each answer before asking the next.
+
+**What to ask about (only if genuinely unknown):**
+
+| Unknown | Example question |
+|---|---|
+| Success definition | "What does done look like — what can a user do that they couldn't before?" |
+| Scope boundary | "Should this affect X as well, or just Y?" |
+| Key constraint | "Any tech or pattern constraints I should know about?" |
+| Approach fork | "Two reasonable approaches here — which fits better?" |
+| Slice size | "Is this a focused change or a larger feature?" |
+
+**Pre-fill options with your best inference.** The user should be able to
+confirm your guess with one click in the common case. Always include an
+"Other / something else" option.
+
+**Example** — prompt: "add user avatar upload to the profile page"
+
+Question 1: "Where should uploaded avatars be stored?"
+- `Cloud storage (S3 / GCS)` — upload to object storage, store URL in DB
+- `Database` — store as binary blob in the users table
+- `Local filesystem` — store on the server (not recommended for production)
+- `Other / not sure yet`
+
+Question 2: "Should we enforce size or format limits on uploads?"
+- `Yes — limit to 5MB, accept JPG/PNG/WebP`
+- `Yes — but I'll specify the limits`
+- `No limits needed`
+- `Other`
+
+### 2d — Build requirements summary
+
+Once all questions are answered, compile everything into a structured
+`{requirements}` block:
+
+```
+## What
+{what is being built or changed — specific}
+
+## Success criteria
+{what must be true when this is done — observable outcomes}
+
+## Domain
+{primary domain: frontend / backend / full-stack / infra / etc.}
+
+## Constraints
+{tech stack, existing patterns, things to avoid, decisions already made}
+
+## Scope
+{small / medium / large; if large, the first slice being planned}
+
+## Assumptions
+{things inferred, not stated — so planners know what to flag if wrong}
+```
+
+Pass this `{requirements}` block to all planning agents.
 
 ## Stage 3 — Agent Selection
 
