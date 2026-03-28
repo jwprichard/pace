@@ -101,19 +101,31 @@ _Verified: {ISO 8601 timestamp}_
 ## Overall Verdict
 NEEDS WORK
 
-## Failing Criteria
+## Failing Tasks
 
 ### Task {N}: {title}
+**Agent:** @{agent from PLAN.md}
+**Files:** {files from PLAN.md}
+**Allowed tools:** {allowed tools from PLAN.md}
+
+#### Failing Criteria
 - **Criterion:** {criterion text}
   **Expected:** {what the criterion requires}
   **Found:** {what was actually found}
 
-### Task {N}: {title}
-- ...
+- **Criterion:** {next failing criterion}
+  **Expected:** ...
+  **Found:** ...
 
-## Passing Criteria (summary)
+### Task {N}: {title}
+...
+
+## Passing Tasks (summary)
 - Task {N}: {title} — all {X} criteria passed
 ```
+
+Include every detail the fix agent will need — agent name, files, tools, and the exact
+gap between expected and found. The fix agent will receive this as its entire brief.
 
 **If VERIFIED:** Delete `.pace/VERIFICATION.md` if it exists (stale from a prior run),
 then do not create a new one — there is nothing to fix.

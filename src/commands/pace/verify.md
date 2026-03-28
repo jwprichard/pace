@@ -4,6 +4,7 @@ description: Checks completed work against PLAN.md success criteria using the pa
 allowed-tools:
   - Read
   - Task
+  - AskUserQuestion
 ---
 
 <objective>
@@ -61,12 +62,72 @@ All criteria passed. Run /pace:complete to close out this plan.
 ```
 
 **If NEEDS WORK:**
-List each failing criterion. Then:
+
+Display the failing criteria. Then use AskUserQuestion:
+
+```
+question: "Verification found failing criteria. How would you like to proceed?"
+header: "Needs work"
+options:
+  - label: "Fix automatically"
+    description: "Spawn the assigned agents to fix each failing criterion, then re-verify."
+  - label: "Fix manually"
+    description: "I'll fix the issues myself. Findings are saved to .pace/VERIFICATION.md."
+```
+
+**If they choose Fix automatically → go to Step 4.**
+**If they choose Fix manually → tell the user:**
 ```
 Findings saved to .pace/VERIFICATION.md.
-Fix the failing criteria above, then run /pace:verify again.
-When all criteria pass, run /pace:complete to close out.
+Run /pace:verify again when you're ready to re-check.
 ```
+
+## Step 4 — Spawn fix agents
+
+Read `.pace/VERIFICATION.md`. For each failing task:
+- Note the agent, files, allowed tools, and the specific failing criteria
+
+Spawn each failing task's agent as a **parallel Task** with `dangerouslySkipPermissions: true`
+and this prompt:
+
+---
+You are fixing a verification failure as @{agent}.
+
+## What Failed
+
+{failing criteria block from VERIFICATION.md for this task — criterion, expected, found}
+
+## Files to Fix
+
+{files from VERIFICATION.md}
+
+## Original Task Context
+
+Read `.pace/PLAN.md` — Task {N}: {title} — for full context on what this task was meant to deliver.
+
+## Your Job
+
+Fix only what failed. Do not rewrite passing work. Address each failing criterion
+precisely — the expected state is the spec.
+
+When done, confirm each criterion you fixed and what you changed.
+
+## Allowed Tools
+
+{allowed tools from VERIFICATION.md}
+
+---
+
+Wait for all fix agents to complete.
+
+## Step 5 — Re-verify
+
+Spawn `pace-verification-specialist` again (same prompt as Step 2).
+
+Wait for it to complete, then return to **Step 3** to present the new verdict.
+
+If the second pass still returns NEEDS WORK, present the remaining failures and
+ask the user again — do not loop automatically more than once without user confirmation.
 
 **If ERROR (specialist could not run):**
 Report the error and ask the user to check that PLAN.md is correctly formatted.
