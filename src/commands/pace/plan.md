@@ -1,7 +1,7 @@
 ---
 name: pace:plan
 description: Interview the user, assemble a domain planning team, and produce PLAN.md
-argument-hint: "[topic]"
+argument-hint: "[--tdd] [topic]"
 allowed-tools:
   - Read
   - Write
@@ -38,8 +38,17 @@ Clear any existing draft files from a previous run.
 
 ### 2a — Parse the prompt
 
-Read the argument passed to `/pace:plan` (if any). From it, extract what is
-already known and what is genuinely unclear.
+Read the argument passed to `/pace:plan` (if any).
+
+**TDD mode detection:** Check whether the ARGUMENTS string contains the literal
+text `--tdd`. If it does, set `tdd_mode = true` and carry this flag forward into
+every subsequent stage — it will affect how tasks are structured in Stage 4 and
+what the synthesiser is told in Stage 5. If `--tdd` is not present, set
+`tdd_mode = false` and no behaviour changes downstream. Strip `--tdd` from the
+argument before treating the remainder as the user's prompt.
+
+From the (stripped) argument, extract what is already known and what is
+genuinely unclear.
 
 Build a working picture:
 - **What** — the thing being built or changed (as specific as possible)
@@ -158,11 +167,34 @@ registry. Use this as a guide:
 Load the relevant Tier 2 division files from `.pace/agents/` to confirm the
 exact agent names before spawning.
 
-Tell the user which agents you are assembling and why, then proceed.
+**TDD mode — testing peer selection:**
+If `tdd_mode` is `true`, add exactly one testing-division peer planner to the
+team alongside the 2–3 domain agents selected above. Use this preference order:
+
+1. `@Reality Checker` — preferred for behavioural or integration-heavy work
+   (i.e. the requirements describe end-to-end flows, user-facing behaviour, or
+   cross-service interactions)
+2. `@Test Results Analyzer` — preferred for analysis-heavy work (i.e. the
+   requirements are primarily about data pipelines, reporting, metrics, or
+   understanding existing test output)
+3. `@API Tester` — preferred for API-focused work (i.e. the primary deliverable
+   is a new or changed API surface — endpoints, contracts, or schemas)
+
+Select the first agent in the list whose description matches the work; if none
+fits clearly, default to `@Reality Checker`. Load the testing division Tier 2
+file from `.pace/agents/` to confirm the exact agent name before spawning.
+
+If `tdd_mode` is `false`, do not add a testing peer — Stage 3 behaviour is
+identical to its non-TDD form and no testing agent is selected here.
+
+Tell the user which agents you are assembling and why. When TDD mode is active,
+explicitly name the testing peer and explain which preference criterion matched
+(e.g. "I'm adding @Reality Checker as a testing peer because this work is
+behavioural/integration-focused").
 
 ## Stage 4 — Parallel Draft Planning
 
-Spawn each selected agent as a parallel Task with the following prompt
+Spawn each selected domain agent as a parallel Task with the following prompt
 (substitute `{agent_role}`, `{requirements}`, and `{agent_name}`):
 
 ---
@@ -214,7 +246,74 @@ Only include tasks within your domain expertise.
 Mark dependencies accurately — independent tasks will be run in parallel.
 ---
 
-Wait for all parallel Tasks to complete before proceeding.
+**TDD mode — testing peer planner:**
+If `tdd_mode` is `true`, spawn the selected testing peer agent (chosen in
+Stage 3) as an additional parallel Task alongside the domain planners above,
+using the prompt below (substitute `{testing_agent_role}` and
+`{requirements}`). This Task runs in parallel with the domain planner Tasks —
+do not wait for the domain planners to finish before spawning it.
+
+---
+You are acting as a **{testing_agent_role}** testing planning expert.
+
+Your job is to propose test tasks that cover the expected features of the
+following work. You are writing a test plan only — you must not plan
+implementation tasks. Implementation is handled by separate domain planners
+and is explicitly out of your scope.
+
+## Requirements
+
+{requirements}
+
+## Your Task
+
+Produce a test draft plan and write it to `.pace/drafts/tdd-planner.md` using
+exactly this format:
+
+```markdown
+# Draft Plan — Testing ({testing_agent_role})
+
+## Domain Focus
+One sentence describing the testing perspective you are covering.
+
+## Proposed Tasks
+
+### Task: [TEST] {short title describing what is being tested}
+**Priority:** high | medium | low
+**Depends on:** none
+**Files likely affected:** comma-separated list, or "unknown"
+**Agent:** @agent-name-from-registry (the testing specialist who should implement this)
+**Allowed tools:** comma-separated list of tools this task needs (e.g. Read, Write, Edit, Bash, Glob, Grep)
+**Success criteria:**
+- Observable outcome 1
+- Observable outcome 2
+
+### Task: [TEST] {short title}
+...
+
+## Constraints & Decisions
+Any constraints, risks, or test-strategy decisions the synthesiser should factor in.
+
+## Notes
+Anything else relevant from a testing perspective.
+```
+
+Rules you must follow:
+- Propose exactly one test task per expected feature described in the requirements.
+- Every task title must begin with the prefix `[TEST]`.
+- Every task must have `Depends on: none` — test tasks are not sequenced on
+  each other or on implementation tasks here; the synthesiser will handle
+  ordering in the final plan.
+- Do not plan implementation tasks. Implementation is out of scope for this
+  draft. Limit your tasks strictly to verification, testing, and quality
+  assurance activities.
+---
+
+If `tdd_mode` is `false`, do not spawn the testing peer planner. Stage 4
+spawns only the domain planners described above — no change.
+
+Wait for all parallel Tasks (domain planners and, when applicable, the testing
+peer planner) to complete before proceeding to Stage 5.
 
 ## Stage 5 — Synthesis
 
@@ -232,6 +331,55 @@ The requirements that drove these drafts are:
 
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
 ---
+
+**TDD mode — synthesiser compliance block:**
+If `tdd_mode` is `true`, append the following block to the synthesiser prompt
+above (after the final line "Synthesise all drafts into a single PLAN.md at
+`.pace/PLAN.md`."):
+
+---
+## TDD Compliance Rules
+
+This plan was generated in TDD mode. You must apply all four rules below when
+merging the draft plans into PLAN.md. These rules are mandatory — do not skip
+or soften any of them.
+
+1. **[TEST] tasks are required prerequisites.** Treat every task whose title
+   begins with `[TEST]` (from `.pace/drafts/tdd-planner.md`) as a required
+   prerequisite, not an optional addition. Every `[TEST]` task must appear in
+   the final PLAN.md.
+
+2. **Implementation tasks must declare their test dependency.** For every
+   implementation task that has a corresponding `[TEST]` task (matched by the
+   feature or behaviour being implemented), you must add the `[TEST]` task's
+   number to the `Depends on:` field of the implementation task.
+
+3. **Enforce red-green ordering.** No implementation task may carry a lower
+   task number than its paired `[TEST]` task. If a `[TEST]` task is task N,
+   its paired implementation task must be task N+1 or higher.
+
+4. **Flag untested implementation tasks.** If an implementation task has no
+   corresponding `[TEST]` task, do not silently include it. Add a `Notes:`
+   field to that task containing exactly: `[TDD VIOLATION] No test task was
+   proposed for this implementation task.`
+
+## TDD Header in PLAN.md
+
+After you write the `_Generated: {timestamp}_` line in PLAN.md, add the
+following line immediately after it:
+
+```
+_TDD: enabled_
+```
+
+This marker allows downstream commands (`/pace:execute`, `/pace:verify`, etc.)
+to detect TDD mode by reading PLAN.md without re-parsing the original
+arguments.
+---
+
+If `tdd_mode` is `false`, the Stage 5 prompt is identical to the base prompt
+above — no TDD compliance block is appended and no `_TDD: enabled_` header is
+written.
 
 ## Stage 6 — Approval
 
