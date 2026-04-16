@@ -1,7 +1,7 @@
 ---
 name: pace:plan
 description: Interview the user, assemble a domain planning team, and produce PLAN.md
-argument-hint: "[--tdd] [topic]"
+argument-hint: "[--tdd] [--research] [topic]"
 allowed-tools:
   - Read
   - Write
@@ -34,6 +34,52 @@ Check that the agent registry exists:
 Create the drafts directory: `.pace/drafts/`
 Clear any existing draft files from a previous run.
 
+## Stage 1.5 — Research
+
+If `research_mode` is `false`, skip this stage entirely and proceed to Stage 2.
+
+If `research_mode` is `true`, spawn a single Task with `dangerouslySkipPermissions: true` using the prompt below.
+The stripped user argument (after both `--tdd` and `--research` have been removed) is the research topic.
+
+---
+You are a research agent. Your job is to gather structured background information on the topic provided.
+
+## Topic
+
+{stripped_user_argument}
+
+(This is the user's prompt after removing `--tdd` and `--research` flags. Infer the research subject from this text.)
+
+## Your Task
+
+1. Use `WebSearch` and `WebFetch` to research the topic thoroughly.
+2. Write your findings to `.pace/research.md` using exactly this structure:
+
+```markdown
+# Research Findings
+
+## Topic
+{one-sentence description of what was researched}
+
+## Key Findings
+- {finding 1}
+- {finding 2}
+- {finding 3}
+- ...
+
+## Sources
+- {URL 1}
+- {URL 2}
+- ...
+```
+
+3. After writing the file, return a concise bullet-point summary of no more than five bullets covering the most important findings.
+
+Allowed tools: WebSearch, WebFetch, Write
+---
+
+Wait for the Task to complete. Once it finishes, display the bullet-point summary it returned to the user before proceeding to Stage 2. Do not write the summary to any file — `.pace/research.md` is the single canonical output artifact; the summary is shown inline only.
+
 ## Stage 2 — Interview
 
 ### 2a — Parse the prompt
@@ -46,6 +92,17 @@ every subsequent stage — it will affect how tasks are structured in Stage 4 an
 what the synthesiser is told in Stage 5. If `--tdd` is not present, set
 `tdd_mode = false` and no behaviour changes downstream. Strip `--tdd` from the
 argument before treating the remainder as the user's prompt.
+
+**Research mode detection:** Check whether the ARGUMENTS string contains the
+literal text `--research`. If it does, set `research_mode = true` and carry
+this flag forward into every subsequent stage — it will affect how planning
+agents are instructed to gather information in Stage 4 and what the synthesiser
+is told in Stage 5. If `--research` is not present, set `research_mode = false`
+and no behaviour changes downstream. Strip `--research` from the argument before
+treating the remainder as the user's prompt. Both `--tdd` and `--research` are
+stripped independently — if both flags are present, both are removed and both
+`tdd_mode` and `research_mode` are set to `true` without any else-if chain;
+neither flag contaminates the topic string.
 
 From the (stripped) argument, extract what is already known and what is
 genuinely unclear.
@@ -246,6 +303,25 @@ Only include tasks within your domain expertise.
 Mark dependencies accurately — independent tasks will be run in parallel.
 ---
 
+**Research mode — findings injection:**
+If `research_mode` is `true`, append the following section to every domain
+planner Task prompt above (after the final line "Mark dependencies accurately —
+independent tasks will be run in parallel."):
+
+---
+## Research Findings
+
+{full contents of .pace/research.md}
+---
+
+Read `.pace/research.md` and substitute its full contents in place of the
+placeholder above before spawning each domain planner Task. The appended section
+gives each domain planner structured background knowledge gathered in Stage 1.5.
+
+If `research_mode` is `false`, domain planner Task prompts are byte-for-byte
+identical to the base prompt above — no section is appended and no changes are
+made.
+
 **TDD mode — testing peer planner:**
 If `tdd_mode` is `true`, spawn the selected testing peer agent (chosen in
 Stage 3) as an additional parallel Task alongside the domain planners above,
@@ -309,6 +385,14 @@ Rules you must follow:
   assurance activities.
 ---
 
+When both `tdd_mode` and `research_mode` are `true`, apply the research
+findings injection to the testing peer planner Task prompt as well: append a
+`## Research Findings` section (populated with the full contents of
+`.pace/research.md`) to the testing peer planner prompt above, after the final
+line of the rules block ("Limit your tasks strictly to verification, testing,
+and quality assurance activities."). This is independent of the domain planner
+injection — both apply in parallel; neither depends on the other.
+
 If `tdd_mode` is `false`, do not spawn the testing peer planner. Stage 4
 spawns only the domain planners described above — no change.
 
@@ -332,10 +416,44 @@ The requirements that drove these drafts are:
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
 ---
 
+<!-- Ordering note: research block is evaluated first, then TDD block. Both are
+     independent — neither references nor depends on the other. Both can be
+     active simultaneously without conflict. -->
+
+**Research mode — synthesiser context:**
+If `research_mode` is `true`, append the following block to the synthesiser
+prompt above (after the final line "Synthesise all drafts into a single PLAN.md
+at `.pace/PLAN.md`."). Read `.pace/research.md` and substitute its full
+contents in place of the placeholder before spawning the synthesiser Task.
+
+---
+## Research Findings
+
+{full contents of .pace/research.md}
+
+When writing PLAN.md, add `_Research: enabled_` on the line immediately after
+`_Generated: {timestamp}_`. Example:
+
+```
+_Generated: 2026-04-15T12:00:00Z_
+_Research: enabled_
+```
+
+This marker allows downstream commands (`/pace:execute`, `/pace:verify`, etc.)
+to detect research mode by reading PLAN.md without re-parsing the original
+arguments.
+---
+
+If `research_mode` is `false`, the synthesiser prompt is identical to the base
+prompt above — no block is appended, and no `_Research: enabled_` marker is
+written to PLAN.md.
+
 **TDD mode — synthesiser compliance block:**
 If `tdd_mode` is `true`, append the following block to the synthesiser prompt
 above (after the final line "Synthesise all drafts into a single PLAN.md at
-`.pace/PLAN.md`."):
+`.pace/PLAN.md`."). When both `research_mode` and `tdd_mode` are `true`, both
+blocks are appended — the research block first, then this TDD block — each
+independently after the base prompt's final line:
 
 ---
 ## TDD Compliance Rules
@@ -380,6 +498,20 @@ arguments.
 If `tdd_mode` is `false`, the Stage 5 prompt is identical to the base prompt
 above — no TDD compliance block is appended and no `_TDD: enabled_` header is
 written.
+
+## Notes
+
+**Why `WebSearch` and `WebFetch` are not in the frontmatter `allowed-tools` list:**
+The frontmatter `allowed-tools` list governs the tools available to the
+`pace:plan` command itself — the orchestrating process that conducts the
+interview, spawns Tasks, and writes STATE.md. It does not govern the tools
+available to spawned Tasks. Each spawned Task (domain planner, testing peer
+planner, synthesiser) declares its own allowed tools in the prompt passed to
+`Task`, or inherits defaults from the agent definition. When `research_mode` is
+`true`, `WebSearch` and `WebFetch` should be listed in the `Allowed tools:`
+field of the individual Task prompts passed to planning agents in Stage 4 — not
+added here. Adding them to the frontmatter would grant them to the orchestrator
+only, which does not perform research itself.
 
 ## Stage 6 — Approval
 

@@ -1,6 +1,6 @@
 # PROJECT MAP
-_Scanned: 2026-04-12T02:03:12Z_
-_Commit: a9f3ec0_
+_Scanned: 2026-04-15T00:30:00Z_
+_Commit: eabde35_
 
 ## Stack
 - **Language:** Markdown (command/agent definitions), Bash (installer)
@@ -43,6 +43,7 @@ _Commit: a9f3ec0_
 - Tasks in PLAN.md are atomic: one agent, one session, observable success criteria
 - Agent registry uses a two-tier structure: tier-1 division index always loaded, tier-2 division detail loaded on demand
 - `--tdd` flag opt-in: when passed to `/pace:plan`, threads TDD requirements through planner team assembly and synthesiser enforcement
+- `--research` flag opt-in: when passed to `/pace:plan`, activates research mode; Stage 1.5 runs before the interview — a research Task (dangerouslySkipPermissions: true) searches the web and writes findings to `.pace/research.md`, then displays a bullet summary inline; detected independently of `--tdd` in Stage 2a with its own flag stripping; in Stage 4, full contents of `.pace/research.md` are appended as a `## Research Findings` section to every domain planner Task prompt and (when `tdd_mode` is also true) to the TDD peer planner Task prompt; in Stage 5, the same findings are appended to the synthesiser prompt and the synthesiser is instructed to write `_Research: enabled_` immediately after `_Generated: {timestamp}_` in PLAN.md, enabling downstream commands to detect research mode by reading PLAN.md
 
 ## Test Setup
 - **Runner:** none
