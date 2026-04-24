@@ -22,6 +22,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent |
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria |
 | `/pace:resume` | Reads `STATE.md`, picks up from the last incomplete task |
+| `/pace:create-pr` | Creates a PR summarising what was requested, delivered, and verified |
 | `/pace:complete` | Reconciles branch state, finalises PR |
 
 ## Agents
@@ -45,11 +46,17 @@ Run `/pace:sync-agents` after installing or updating agents.
 
 ```
 .pace/
-  AGENT-REGISTRY.md   # Tier 1 — division index (commit this)
-  agents/             # Tier 2 — per-division agent lists (commit these)
-  PLAN.md             # Current plan
-  STATE.md            # Progress tracking across sessions
-  DECISIONS.md        # Running decision log
+  AGENT-REGISTRY.md        # Tier 1 — division index (commit this)
+  agents/                  # Tier 2 — per-division agent lists (commit these)
+  PLAN.md                  # Current plan
+  STATE.md                 # Operational memory — task status and blockers
+  PROJECT.md               # Codebase map — stack, structure, conventions
+  memory/
+    episode.md             # Episodic memory — what was built this execution (cleared at complete)
+    semantic.md            # Semantic memory — cross-plan decisions and patterns (never cleared)
+  requirements/
+    brief.md               # Compiled interview requirements (plan-specific)
+    research.md            # Research findings (plan-specific, --research only)
 ```
 
 ## Repository Structure
@@ -68,6 +75,7 @@ pace/
         execute.md
         verify.md
         resume.md
+        create-pr.md
         complete.md
   docs/
     README.md
