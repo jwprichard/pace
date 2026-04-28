@@ -18,6 +18,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | Command | What it does |
 |---|---|
 | `/pace:sync-agents` | Scans installed agents, writes the two-tier agent registry |
+| `/pace:roadmap` | Decomposes a large feature into ordered phases, produces `ROADMAP.md` |
 | `/pace:plan` | Interviews user, produces `PLAN.md` with atomic tasks and agent hints |
 | `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent |
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria |
@@ -50,6 +51,7 @@ Run `/pace:sync-agents` after installing or updating agents.
 .pace/
   AGENT-REGISTRY.md        # Tier 1 — division index (commit this)
   agents/                  # Tier 2 — per-division agent lists (commit these)
+  ROADMAP.md               # Phase decomposition for large features (persists across plans)
   PLAN.md                  # Current plan
   STATE.md                 # Operational memory — task status and blockers
   PROJECT.md               # Codebase map — stack, structure, conventions
@@ -75,6 +77,7 @@ pace/
     commands/
       pace/
         sync-agents.md
+        roadmap.md
         plan.md
         execute.md
         verify.md
