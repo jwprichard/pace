@@ -128,6 +128,32 @@ Check whether `.pace/STATE.md` exists.
     Then proceed to Check 4.
     If **No**: stop. No changes made.
 
+### Check 3b: Roadmap context
+
+Check whether `.pace/ROADMAP.md` exists.
+
+If it does not exist, set `roadmap_phase = null` and proceed to Check 4.
+
+If it exists:
+1. Read it and find the first phase with `**Status:** pending`
+2. If no pending phase exists → set `roadmap_phase = null`, proceed to Check 4
+3. If a pending phase is found:
+   - Set `roadmap_phase = {phase number}`, `roadmap_phase_title = {phase title}`
+   - Store the phase's **Objective** and **Key deliverables** as `phase_context`
+   - If the user provided no topic in the argument string → use AskUserQuestion:
+     ```
+     question: "A roadmap exists with a pending phase. Plan this phase next?"
+     header: "Phase {roadmap_phase}: {roadmap_phase_title}"
+     options:
+       - label: "Yes, plan this phase"
+         description: "Use the phase objective and deliverables as context for planning."
+       - label: "No, plan something else"
+         description: "Ignore the roadmap and plan standalone work."
+     ```
+     If **Yes**: use the phase objective as the topic string. Proceed.
+     If **No**: set `roadmap_phase = null`. Proceed — the user will provide a topic at Stage 2a.
+   - If the user provided a topic → set `roadmap_phase = null`. They know what they want.
+
 ### Check 4: Clear plan-specific artifacts
 
 ```bash
@@ -192,6 +218,10 @@ shown inline only.
 ### 2a — Parse the prompt
 
 Read the topic string (all flags already stripped in Stage 0).
+
+If `roadmap_phase` is set, the phase objective is the topic and the phase
+deliverables define the scope boundary. Focus open questions on *how* to
+implement the phase, not *what* to build — the roadmap already defines that.
 
 From the topic, extract what is already known and what is genuinely unclear.
 
@@ -510,6 +540,19 @@ The requirements that drove these drafts are:
 {contents of .pace/requirements/brief.md}
 
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
+
+{If `roadmap_phase` is set, append:}
+
+## Phase Marker
+
+This plan implements Phase {roadmap_phase} of the project roadmap.
+Add the following line to PLAN.md immediately after the `_Created:_` line:
+
+```
+_Phase: {roadmap_phase}_
+```
+
+{End of roadmap_phase conditional block.}
 ---
 
 **TDD mode — synthesiser compliance block:**
@@ -603,7 +646,30 @@ in_progress
 (none)
 ```
 
-Then tell the user: **"Plan approved. Run `/pace:execute` to start."**
+### Branch creation
+
+After writing STATE.md, check the current branch:
+
+```bash
+git branch --show-current
+```
+
+If the current branch is `main` or `master`:
+1. Derive the branch name:
+   - If `roadmap_phase` is set: `pace/phase-{roadmap_phase}-{slugified roadmap_phase_title}`
+   - Otherwise: `pace/{slugified plan title from PLAN.md}`
+   - Slugify: lowercase, replace non-alphanumeric characters with hyphens,
+     collapse consecutive hyphens, trim hyphens from ends, truncate to 50 characters
+2. Create and switch to the branch:
+   ```bash
+   git checkout -b {branch-name}
+   ```
+3. If `roadmap_phase` is set, edit `.pace/ROADMAP.md`: change the matching phase's
+   `**Status:** pending` to `**Status:** in_progress`.
+
+If the current branch is not `main` or `master`, use it as-is.
+
+Tell the user which branch is active, then: **"Plan approved. Run `/pace:execute` to start."**
 
 **If they choose Edit:**
 Ask what they'd like to change. Make the edits to `.pace/PLAN.md` directly.
