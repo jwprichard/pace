@@ -43,6 +43,7 @@ PACE doesn't ship its own agents — it discovers whatever agents you have insta
 | `/pace:plan` | Interviews you, produces PLAN.md with atomic tasks |
 | `/pace:execute` | Reads PLAN.md, delegates each task to a specialist agent |
 | `/pace:verify` | Checks completed work against plan success criteria |
+| `/pace:fix` | Dispatches targeted fixes — structured by default, `--light` for quick one-shot |
 | `/pace:resume` | Picks up from the last incomplete task |
 | `/pace:complete` | Reconciles branch state, finalises PR |
 

@@ -21,6 +21,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | `/pace:plan` | Interviews user, produces `PLAN.md` with atomic tasks and agent hints |
 | `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent |
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria |
+| `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — `--light` for quick one-shot fixes |
 | `/pace:resume` | Reads `STATE.md`, picks up from the last incomplete task |
 | `/pace:create-pr` | Creates a PR summarising what was requested, delivered, and verified |
 | `/pace:complete` | Reconciles branch state, finalises PR |
@@ -77,6 +78,7 @@ pace/
         plan.md
         execute.md
         verify.md
+        fix.md
         resume.md
         create-pr.md
         complete.md

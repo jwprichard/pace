@@ -9,6 +9,7 @@ flowchart TD
     execute["/pace:execute"]
     agent["/pace:agent"]
     verify["/pace:verify"]
+    fix["/pace:fix"]
     complete["/pace:complete"]
     resume["/pace:resume"]
 
@@ -16,10 +17,13 @@ flowchart TD
     plan -->|PLAN.md + STATE.md approved| execute
     execute -->|all tasks done| verify
     verify -->|work confirmed| complete
+    verify -->|needs work| fix
+    fix -->|fixes applied| verify
     execute -->|task blocked| resume
     resume --> execute
 
     agent -.->|one-shot shortcut| complete
+    fix -.->|"--light (no state tracking)"| complete
 ```
 
 ## Agent Roster
