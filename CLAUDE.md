@@ -29,9 +29,10 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 
 | Agent | Role |
 |---|---|
-| `pace-planner` | Conducts planning interview, writes `PLAN.md` |
-| `pace-orchestrator` | Reads `PLAN.md`, spawns the correct specialist per task |
-| `pace-verifier` | Reads success criteria, checks work matches |
+| `pace-synthesiser` | Merges parallel draft plans into a single `PLAN.md` |
+| `pace-codebase-analyst` | Analyses raw codebase data and writes `PROJECT.md` |
+| `pace-documentation-specialist` | Patches or rewrites `PROJECT.md` after tasks complete |
+| `pace-verification-specialist` | Checks completed work against success criteria |
 
 ## Agent Registry
 
@@ -65,9 +66,11 @@ Run `/pace:sync-agents` after installing or updating agents.
 pace/
   src/
     agents/
-      pace-planner.md
-      pace-orchestrator.md
-      pace-verifier.md
+      pace-synthesiser.md
+      pace/
+        pace-codebase-analyst.md
+        pace-documentation-specialist.md
+        pace-verification-specialist.md
     commands/
       pace/
         sync-agents.md

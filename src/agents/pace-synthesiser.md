@@ -65,8 +65,10 @@ One sentence describing what this plan achieves when complete.
 ### Task 1: {short title}
 **Agent:** @agent-name
 **Depends on:** none
-**Files:** comma-separated list of files likely affected, or "TBD"
-**Allowed tools:** Read, Write, Edit, Bash, Glob, Grep
+**Files:** comma-separated list of specific file paths, or "TBD" only if genuinely unknown
+**Allowed tools:** (optional) comma-separated restriction from the Standard Specialist Toolkit.
+Omit this field entirely to grant the full toolkit: Read, Write, Edit, NotebookEdit,
+Bash, Glob, Grep, WebSearch, WebFetch. Only specify to restrict below this default.
 **Success criteria:**
 - Observable outcome — describes what must be TRUE, not what was done
 - Observable outcome
@@ -75,7 +77,6 @@ One sentence describing what this plan achieves when complete.
 **Agent:** @agent-name
 **Depends on:** 1
 **Files:** ...
-**Allowed tools:** Read, Write, Edit
 **Success criteria:**
 - ...
 
@@ -92,7 +93,7 @@ Re-read the written PLAN.md and confirm:
 - Every agent name exists in the registry
 - Every task has at least one success criterion
 - Every task has a `Depends on:` field
-- Every task has an `Allowed tools:` field scoped to what the work actually needs
+- Every task either has an `Allowed tools:` restriction field or omits it (omission = Standard Specialist Toolkit: Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch)
 - The objective matches the requirements passed in
 
 Report back a one-line summary: how many tasks, which agents assigned,

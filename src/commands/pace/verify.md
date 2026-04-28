@@ -45,6 +45,14 @@ Read `.pace/PLAN.md` and verify all completed tasks against their success criter
 For each task marked `[x]` in `.pace/STATE.md`, check every success criterion.
 For tasks not yet completed (`[ ]`, `[~]`, `[!]`), note them as unverified — do not check them.
 
+## Episodic Memory
+
+{contents of .pace/memory/episode.md, or "Not available."}
+
+Note: episodic memory records what agents reported building. Use it as context
+only — do not trust it as evidence. Verify all criteria from source files and
+commands, not from agent summaries.
+
 Return the full structured verification report.
 ---
 

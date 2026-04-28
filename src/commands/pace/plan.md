@@ -1,7 +1,7 @@
 ---
 name: pace:plan
 description: Interview the user, assemble a domain planning team, and produce PLAN.md
-argument-hint: "[--tdd] [--research] [topic]"
+argument-hint: "[--tdd] [--research] [--abandon] [topic]"
 allowed-tools:
   - Read
   - Write
@@ -25,21 +25,123 @@ team and synthesise their output.
 > **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
 > This applies to all agent spawns without exception — planners, synthesiser, and any others.
 
+## Stage 0 — Parse Flags
+
+Read the full argument string. Detect all flags independently:
+
+- If the argument contains `--tdd`: set `tdd_mode = true`, strip `--tdd` from the string
+- If the argument contains `--research`: set `research_mode = true`, strip `--research` from the string
+- If the argument contains `--abandon`: set `abandon_mode = true`, strip `--abandon` from the string
+- If a flag is absent, set the corresponding mode to `false`
+
+All three flags are stripped independently — any combination is valid and no flag
+contaminates another. The remaining string after all flags are stripped is the user's
+topic prompt.
+
 ## Stage 1 — Pre-flight
 
-Check that the agent registry exists:
-- Load `.pace/AGENT-REGISTRY.md`
-- If it does not exist, stop and tell the user to run `/pace:sync-agents` first
+Run the following checks in order. Stop on the first failure unless otherwise noted.
 
-Create the drafts directory: `.pace/drafts/`
-Clear any existing draft files from a previous run.
+### Check 1: Agent registry
+
+Load `.pace/AGENT-REGISTRY.md`.
+If it does not exist, stop:
+```
+Run /pace:sync-agents first to build the agent registry.
+```
+
+### Check 2: PROJECT.md (required for planning)
+
+Check whether `.pace/PROJECT.md` exists.
+
+**If it does not exist:**
+
+Use AskUserQuestion:
+```
+question: "PROJECT.md not found. A codebase scan is required before planning so agents have accurate context. Can I run it now? This will take a moment."
+header: "Codebase scan required"
+options:
+  - label: "Yes, scan now"
+    description: "Run the scan and continue to planning."
+  - label: "No, I'll run /pace:scan myself"
+    description: "Stop here. I'll run /pace:scan first and then come back."
+```
+
+If **Yes**: run the inline scan:
+1. Run the following bash commands and collect all output:
+   ```bash
+   git rev-parse --short HEAD
+   find . -maxdepth 2 \
+     -not -path './.git/*' \
+     -not -path './node_modules/*' \
+     -not -path './.pace/*' \
+     | sort
+   ```
+2. Read the following files **if they exist**: `package.json`, `requirements.txt`,
+   `Gemfile`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `tsconfig.json`,
+   `docker-compose.yml`, `.env.example`, `Makefile`
+3. Ensure `.pace/` exists: `mkdir -p .pace`
+4. Spawn `pace-codebase-analyst` as a Task with `dangerouslySkipPermissions: true`
+   and the collected data. Wait for completion.
+
+If **No**: stop. Tell the user to run `/pace:scan` first.
+
+**If it exists:** Read the `_Commit:_` line. Run `git rev-parse --short HEAD`.
+If they differ, warn (non-blocking):
+```
+Warning: PROJECT.md is out of date (stored: {stored hash}, current: {current hash}).
+Agents may plan against stale codebase structure. Consider running /pace:scan to refresh.
+```
+Then continue.
+
+### Check 3: Prior plan state
+
+Check whether `.pace/STATE.md` exists.
+
+- **Missing** → clean slate, proceed to Check 4
+- **Exists, status = complete** → clean slate, proceed to Check 4
+- **Exists, status = in_progress or blocked:**
+  - If `abandon_mode = false` → stop:
+    ```
+    A plan is still in progress.
+    Run /pace:complete to archive it before starting a new one.
+    Or run /pace:plan --abandon to discard it and start fresh.
+    ```
+  - If `abandon_mode = true` → use AskUserQuestion:
+    ```
+    question: "Abandon the current plan? This will delete PLAN.md, STATE.md, requirements/, and memory/episode.md. Semantic memory and PROJECT.md are preserved. This cannot be undone."
+    header: "Abandon current plan?"
+    options:
+      - label: "Yes, abandon it"
+        description: "Delete the current plan and start fresh."
+      - label: "No, keep it"
+        description: "Stop here. No changes made."
+    ```
+    If **Yes**: run:
+    ```bash
+    rm -f .pace/PLAN.md
+    rm -f .pace/STATE.md
+    rm -f .pace/memory/episode.md
+    rm -rf .pace/requirements/
+    rm -rf .pace/drafts/
+    ```
+    Then proceed to Check 4.
+    If **No**: stop. No changes made.
+
+### Check 4: Clear plan-specific artifacts
+
+```bash
+rm -rf .pace/requirements/ .pace/drafts/
+mkdir -p .pace/requirements/ .pace/drafts/
+```
 
 ## Stage 1.5 — Research
 
 If `research_mode` is `false`, skip this stage entirely and proceed to Stage 2.
 
-If `research_mode` is `true`, spawn a single Task with `dangerouslySkipPermissions: true` using the prompt below.
-The stripped user argument (after both `--tdd` and `--research` have been removed) is the research topic.
+If `research_mode` is `true`, spawn a single Task with `dangerouslySkipPermissions: true`
+using the prompt below. The stripped topic string (after all flags are removed) is the
+research topic.
 
 ---
 You are a research agent. Your job is to gather structured background information on the topic provided.
@@ -48,12 +150,13 @@ You are a research agent. Your job is to gather structured background informatio
 
 {stripped_user_argument}
 
-(This is the user's prompt after removing `--tdd` and `--research` flags. Infer the research subject from this text.)
+(This is the user's prompt after removing `--tdd`, `--research`, and `--abandon` flags.
+Infer the research subject from this text.)
 
 ## Your Task
 
 1. Use `WebSearch` and `WebFetch` to research the topic thoroughly.
-2. Write your findings to `.pace/research.md` using exactly this structure:
+2. Write your findings to `.pace/requirements/research.md` using exactly this structure:
 
 ```markdown
 # Research Findings
@@ -73,39 +176,24 @@ You are a research agent. Your job is to gather structured background informatio
 - ...
 ```
 
-3. After writing the file, return a concise bullet-point summary of no more than five bullets covering the most important findings.
+3. After writing the file, return a concise bullet-point summary of no more than five
+   bullets covering the most important findings.
 
 Allowed tools: WebSearch, WebFetch, Write
 ---
 
-Wait for the Task to complete. Once it finishes, display the bullet-point summary it returned to the user before proceeding to Stage 2. Do not write the summary to any file — `.pace/research.md` is the single canonical output artifact; the summary is shown inline only.
+Wait for the Task to complete. Once it finishes, display the bullet-point summary it
+returned to the user before proceeding to Stage 2. Do not write the summary to any file —
+`.pace/requirements/research.md` is the single canonical output artifact; the summary is
+shown inline only.
 
 ## Stage 2 — Interview
 
 ### 2a — Parse the prompt
 
-Read the argument passed to `/pace:plan` (if any).
+Read the topic string (all flags already stripped in Stage 0).
 
-**TDD mode detection:** Check whether the ARGUMENTS string contains the literal
-text `--tdd`. If it does, set `tdd_mode = true` and carry this flag forward into
-every subsequent stage — it will affect how tasks are structured in Stage 4 and
-what the synthesiser is told in Stage 5. If `--tdd` is not present, set
-`tdd_mode = false` and no behaviour changes downstream. Strip `--tdd` from the
-argument before treating the remainder as the user's prompt.
-
-**Research mode detection:** Check whether the ARGUMENTS string contains the
-literal text `--research`. If it does, set `research_mode = true` and carry
-this flag forward into every subsequent stage — it will affect how planning
-agents are instructed to gather information in Stage 4 and what the synthesiser
-is told in Stage 5. If `--research` is not present, set `research_mode = false`
-and no behaviour changes downstream. Strip `--research` from the argument before
-treating the remainder as the user's prompt. Both `--tdd` and `--research` are
-stripped independently — if both flags are present, both are removed and both
-`tdd_mode` and `research_mode` are set to `true` without any else-if chain;
-neither flag contaminates the topic string.
-
-From the (stripped) argument, extract what is already known and what is
-genuinely unclear.
+From the topic, extract what is already known and what is genuinely unclear.
 
 Build a working picture:
 - **What** — the thing being built or changed (as specific as possible)
@@ -114,7 +202,7 @@ Build a working picture:
 - **Assumptions** — things you are inferring that the user did not state explicitly
 - **Open questions** — aspects that are unclear and will materially affect the plan
 
-If no argument was provided, ask a single open question first:
+If no topic was provided, ask a single open question first:
 > "What are you building or changing?"
 Then treat their answer as the prompt and proceed.
 
@@ -164,24 +252,9 @@ Ask one question at a time. Wait for each answer before asking the next.
 confirm your guess with one click in the common case. Always include an
 "Other / something else" option.
 
-**Example** — prompt: "add user avatar upload to the profile page"
+### 2d — Build requirements summary and write brief.md
 
-Question 1: "Where should uploaded avatars be stored?"
-- `Cloud storage (S3 / GCS)` — upload to object storage, store URL in DB
-- `Database` — store as binary blob in the users table
-- `Local filesystem` — store on the server (not recommended for production)
-- `Other / not sure yet`
-
-Question 2: "Should we enforce size or format limits on uploads?"
-- `Yes — limit to 5MB, accept JPG/PNG/WebP`
-- `Yes — but I'll specify the limits`
-- `No limits needed`
-- `Other`
-
-### 2d — Build requirements summary
-
-Once all questions are answered, compile everything into a structured
-`{requirements}` block:
+Once all questions are answered, compile everything into a structured requirements block:
 
 ```
 ## What
@@ -203,7 +276,17 @@ Once all questions are answered, compile everything into a structured
 {things inferred, not stated — so planners know what to flag if wrong}
 ```
 
-Pass this `{requirements}` block to all planning agents.
+If `research_mode = true`, append to this block:
+
+```
+## Research Findings
+{full contents of .pace/requirements/research.md}
+```
+
+Write the complete block (including research section if present) to `.pace/requirements/brief.md`.
+
+The `{requirements}` variable used in all subsequent stages means: the contents of
+`.pace/requirements/brief.md`. Read from file — do not hold in context.
 
 ## Stage 3 — Agent Selection
 
@@ -245,14 +328,14 @@ If `tdd_mode` is `false`, do not add a testing peer — Stage 3 behaviour is
 identical to its non-TDD form and no testing agent is selected here.
 
 Tell the user which agents you are assembling and why. When TDD mode is active,
-explicitly name the testing peer and explain which preference criterion matched
-(e.g. "I'm adding @Reality Checker as a testing peer because this work is
-behavioural/integration-focused").
+explicitly name the testing peer and explain which preference criterion matched.
 
 ## Stage 4 — Parallel Draft Planning
 
+Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
+
 Spawn each selected domain agent as a parallel Task with the following prompt
-(substitute `{agent_role}`, `{requirements}`, and `{agent_name}`):
+(substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`):
 
 ---
 You are acting as a **{agent_role}** planning expert.
@@ -261,9 +344,13 @@ Your job is to produce a domain-specific draft plan for the following work.
 Focus on your area of expertise only — do not try to cover every aspect.
 Another agent will cover other domains and a synthesiser will merge all drafts.
 
+## Codebase Context
+
+{full contents of .pace/PROJECT.md}
+
 ## Requirements
 
-{requirements}
+{contents of .pace/requirements/brief.md}
 
 ## Your Task
 
@@ -281,12 +368,27 @@ One sentence describing which aspect of the work you are planning.
 ### Task: {short title}
 **Priority:** high | medium | low
 **Depends on:** task numbers this must wait for, or "none"
-**Files likely affected:** comma-separated list, or "unknown"
+**Files likely affected:** comma-separated list of specific file paths where known.
+Use "TBD" only when files genuinely cannot be determined at planning time — not as a default.
 **Agent:** @agent-name-from-registry (the specialist who should implement this)
-**Allowed tools:** comma-separated list of tools this task needs (e.g. Read, Write, Edit, Bash, Glob, Grep)
+**Allowed tools:** (optional) comma-separated restriction from the Standard Specialist Toolkit.
+Omit this field entirely to grant the full toolkit: Read, Write, Edit, NotebookEdit,
+Bash, Glob, Grep, WebSearch, WebFetch. Only specify to restrict below this default.
 **Success criteria:**
-- Observable outcome 1
-- Observable outcome 2
+Success criteria must describe an observable, checkable state — not an action taken.
+
+Good criteria:
+  ✓ `GET /api/users/me` returns 200 with `{id, email, name}` when authenticated
+  ✓ `src/models/user.ts` exports a `User` interface with fields: id, email, createdAt
+  ✓ Running `npm test` exits 0 with no failing tests mentioning "auth"
+
+Bad criteria (do not write these):
+  ✗ "Auth middleware is implemented"
+  ✗ "Tests pass"
+  ✗ "API endpoint is added"
+
+- {observable outcome 1}
+- {observable outcome 2}
 
 ### Task: {short title}
 ...
@@ -303,31 +405,12 @@ Only include tasks within your domain expertise.
 Mark dependencies accurately — independent tasks will be run in parallel.
 ---
 
-**Research mode — findings injection:**
-If `research_mode` is `true`, append the following section to every domain
-planner Task prompt above (after the final line "Mark dependencies accurately —
-independent tasks will be run in parallel."):
-
----
-## Research Findings
-
-{full contents of .pace/research.md}
----
-
-Read `.pace/research.md` and substitute its full contents in place of the
-placeholder above before spawning each domain planner Task. The appended section
-gives each domain planner structured background knowledge gathered in Stage 1.5.
-
-If `research_mode` is `false`, domain planner Task prompts are byte-for-byte
-identical to the base prompt above — no section is appended and no changes are
-made.
-
 **TDD mode — testing peer planner:**
 If `tdd_mode` is `true`, spawn the selected testing peer agent (chosen in
 Stage 3) as an additional parallel Task alongside the domain planners above,
-using the prompt below (substitute `{testing_agent_role}` and
-`{requirements}`). This Task runs in parallel with the domain planner Tasks —
-do not wait for the domain planners to finish before spawning it.
+using the prompt below (substitute `{testing_agent_role}`).
+This Task runs in parallel with the domain planner Tasks — do not wait for
+the domain planners to finish before spawning it.
 
 ---
 You are acting as a **{testing_agent_role}** testing planning expert.
@@ -337,9 +420,13 @@ following work. You are writing a test plan only — you must not plan
 implementation tasks. Implementation is handled by separate domain planners
 and is explicitly out of your scope.
 
+## Codebase Context
+
+{full contents of .pace/PROJECT.md}
+
 ## Requirements
 
-{requirements}
+{contents of .pace/requirements/brief.md}
 
 ## Your Task
 
@@ -357,12 +444,23 @@ One sentence describing the testing perspective you are covering.
 ### Task: [TEST] {short title describing what is being tested}
 **Priority:** high | medium | low
 **Depends on:** none
-**Files likely affected:** comma-separated list, or "unknown"
+**Files likely affected:** comma-separated list of specific file paths, or "TBD" only if genuinely unknown
 **Agent:** @agent-name-from-registry (the testing specialist who should implement this)
-**Allowed tools:** comma-separated list of tools this task needs (e.g. Read, Write, Edit, Bash, Glob, Grep)
+**Allowed tools:** (optional) omit to grant the Standard Specialist Toolkit
 **Success criteria:**
-- Observable outcome 1
-- Observable outcome 2
+Success criteria must describe an observable, checkable state — not an action taken.
+
+Good criteria:
+  ✓ Running `npm test -- --testPathPattern=auth` exits 0
+  ✓ `tests/auth.test.ts` contains a test case named "returns 401 when token is missing"
+  ✓ Coverage report shows >80% line coverage for `src/auth/`
+
+Bad criteria:
+  ✗ "Tests are written"
+  ✗ "Auth is tested"
+
+- {observable outcome 1}
+- {observable outcome 2}
 
 ### Task: [TEST] {short title}
 ...
@@ -385,14 +483,6 @@ Rules you must follow:
   assurance activities.
 ---
 
-When both `tdd_mode` and `research_mode` are `true`, apply the research
-findings injection to the testing peer planner Task prompt as well: append a
-`## Research Findings` section (populated with the full contents of
-`.pace/research.md`) to the testing peer planner prompt above, after the final
-line of the rules block ("Limit your tasks strictly to verification, testing,
-and quality assurance activities."). This is independent of the domain planner
-injection — both apply in parallel; neither depends on the other.
-
 If `tdd_mode` is `false`, do not spawn the testing peer planner. Stage 4
 spawns only the domain planners described above — no change.
 
@@ -400,6 +490,8 @@ Wait for all parallel Tasks (domain planners and, when applicable, the testing
 peer planner) to complete before proceeding to Stage 5.
 
 ## Stage 5 — Synthesis
+
+Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
 Once all draft files exist in `.pace/drafts/`, spawn the `pace-synthesiser`
 agent as a Task with the following prompt:
@@ -409,51 +501,21 @@ Read all draft plan files in `.pace/drafts/`.
 Read `.pace/AGENT-REGISTRY.md` and the relevant Tier 2 division files to
 validate agent names.
 
+## Codebase Context
+
+{full contents of .pace/PROJECT.md}
+
 The requirements that drove these drafts are:
 
-{requirements}
+{contents of .pace/requirements/brief.md}
 
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
 ---
 
-<!-- Ordering note: research block is evaluated first, then TDD block. Both are
-     independent — neither references nor depends on the other. Both can be
-     active simultaneously without conflict. -->
-
-**Research mode — synthesiser context:**
-If `research_mode` is `true`, append the following block to the synthesiser
-prompt above (after the final line "Synthesise all drafts into a single PLAN.md
-at `.pace/PLAN.md`."). Read `.pace/research.md` and substitute its full
-contents in place of the placeholder before spawning the synthesiser Task.
-
----
-## Research Findings
-
-{full contents of .pace/research.md}
-
-When writing PLAN.md, add `_Research: enabled_` on the line immediately after
-`_Generated: {timestamp}_`. Example:
-
-```
-_Generated: 2026-04-15T12:00:00Z_
-_Research: enabled_
-```
-
-This marker allows downstream commands (`/pace:execute`, `/pace:verify`, etc.)
-to detect research mode by reading PLAN.md without re-parsing the original
-arguments.
----
-
-If `research_mode` is `false`, the synthesiser prompt is identical to the base
-prompt above — no block is appended, and no `_Research: enabled_` marker is
-written to PLAN.md.
-
 **TDD mode — synthesiser compliance block:**
 If `tdd_mode` is `true`, append the following block to the synthesiser prompt
 above (after the final line "Synthesise all drafts into a single PLAN.md at
-`.pace/PLAN.md`."). When both `research_mode` and `tdd_mode` are `true`, both
-blocks are appended — the research block first, then this TDD block — each
-independently after the base prompt's final line:
+`.pace/PLAN.md`."):
 
 ---
 ## TDD Compliance Rules
@@ -491,27 +553,12 @@ _TDD: enabled_
 ```
 
 This marker allows downstream commands (`/pace:execute`, `/pace:verify`, etc.)
-to detect TDD mode by reading PLAN.md without re-parsing the original
-arguments.
+to detect TDD mode by reading PLAN.md without re-parsing the original arguments.
 ---
 
 If `tdd_mode` is `false`, the Stage 5 prompt is identical to the base prompt
-above — no TDD compliance block is appended and no `_TDD: enabled_` header is
-written.
-
-## Notes
-
-**Why `WebSearch` and `WebFetch` are not in the frontmatter `allowed-tools` list:**
-The frontmatter `allowed-tools` list governs the tools available to the
-`pace:plan` command itself — the orchestrating process that conducts the
-interview, spawns Tasks, and writes STATE.md. It does not govern the tools
-available to spawned Tasks. Each spawned Task (domain planner, testing peer
-planner, synthesiser) declares its own allowed tools in the prompt passed to
-`Task`, or inherits defaults from the agent definition. When `research_mode` is
-`true`, `WebSearch` and `WebFetch` should be listed in the `Allowed tools:`
-field of the individual Task prompts passed to planning agents in Stage 4 — not
-added here. Adding them to the frontmatter would grant them to the orchestrator
-only, which does not perform research itself.
+above — no TDD compliance block is appended and no `_TDD: enabled_` header
+is written.
 
 ## Stage 6 — Approval
 
@@ -532,7 +579,7 @@ options:
     description: "Discard this plan and start over."
 ```
 
-**If they choose A (Approve):**
+**If they choose Approve:**
 Write `.pace/STATE.md` using this format:
 
 ```markdown
@@ -558,12 +605,34 @@ in_progress
 
 Then tell the user: **"Plan approved. Run `/pace:execute` to start."**
 
-**If they choose E (Edit):**
+**If they choose Edit:**
 Ask what they'd like to change. Make the edits to `.pace/PLAN.md` directly.
 Re-present the updated plan and ask the approval question again.
 
-**If they choose R (Reject):**
+**If they choose Reject:**
 Confirm with the user, then delete `.pace/PLAN.md` and tell them they can
 run `/pace:plan` again when ready.
+
+## Notes
+
+**requirements/ directory:** Plan-specific artifacts live in `.pace/requirements/`:
+- `brief.md` — compiled interview requirements (always written at Stage 2d)
+- `research.md` — research findings (written at Stage 1.5, only when `--research` is used)
+
+Both files are cleared at the start of each new plan run (Check 4 of Stage 1) and
+deleted when `/pace:complete` runs. They are plan-scoped, not persistent.
+
+**Standard Specialist Toolkit:** The default tool set for all specialist agents is:
+`Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch`.
+Planners should omit `Allowed tools:` from tasks unless they have a specific reason
+to restrict below this default. `Task`, `TaskCreate`, `TaskUpdate`, and `AskUserQuestion`
+are orchestrator-only tools and are never granted to specialist agents.
+
+**Memory layers:** PACE maintains two memory layers in `.pace/memory/`:
+- `episode.md` — what was built in the current execution (written by execute, cleared by complete)
+- `semantic.md` — cross-plan institutional knowledge (written by complete, never cleared)
+
+Planners read semantic memory (via the orchestrator in execute). Specialists read
+episodic memory only — they do not read or write to the semantic layer.
 
 </process>

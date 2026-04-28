@@ -50,6 +50,11 @@ If `.pace/PROJECT.md` exists:
   ```
   Then continue — this is a warning, not a blocker.
 
+### Semantic memory
+
+If `.pace/memory/semantic.md` exists, read it. This gives the orchestrator
+institutional context — cross-plan decisions and patterns — when building agent prompts.
+
 ## Stage 2 — Load Tasks and Build Waves
 
 Parse all tasks from the `## Tasks` section of STATE.md:
@@ -117,13 +122,27 @@ prompt for each (substitute all `{...}` placeholders):
 ---
 You are executing **Task {number}: {title}** as part of a PACE plan.
 
-## Allowed Tools
+## Rules
+- Before modifying any file — Write, Edit, or NotebookEdit — you must Read it
+  first. Never modify a file you have not read in this session.
+- Treat Files Likely Affected as your working boundary. You may read any file
+  for context, but only modify files within that list. If you genuinely need
+  to modify a file outside the list, note it in your completion summary — do
+  not silently expand scope.
+- Do not implement work outside your assignment.
+- When done, confirm each success criterion is met.
 
-{allowed tools from PLAN.md}
+## Allowed Tools
+Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch
+{If PLAN.md specifies a restricted Allowed tools field for this task: "Note: this task is restricted to: {list}"}
 
 ## Codebase Context
 
-{stack and structure sections from PROJECT.md, or "Not available — run /pace:scan to generate."}
+{full contents of .pace/PROJECT.md, or "Not available — run /pace:scan to generate."}
+
+## Episodic Memory
+
+{contents of .pace/memory/episode.md, or "No tasks completed yet in this execution."}
 
 ## Your Assignment
 
@@ -136,14 +155,6 @@ You are executing **Task {number}: {title}** as part of a PACE plan.
 ## Success Criteria
 
 {success criteria from PLAN.md}
-
-## Context
-
-Previously completed tasks in this plan:
-{list of completed task titles, or "none — this is the first task"}
-
-Do not implement work outside your assignment. Focus only on the task above.
-Only use the tools listed above. When done, confirm each success criterion is met.
 ---
 
 Wait for **all** tasks in the wave to complete before proceeding to the next wave.
@@ -160,6 +171,26 @@ For each task in the wave:
 ```
 
 Call TaskUpdate for this task: set status to `completed`.
+
+Append the specialist's completion summary to `.pace/memory/episode.md`.
+If the file does not exist, create `.pace/memory/` and create the file with this header first:
+
+```markdown
+# Episodic Memory
+_Plan: {plan title from STATE.md}_
+
+```
+
+Then append:
+
+```markdown
+## Task {number}: {title} (@{agent})
+_Completed: {ISO timestamp}_
+
+{completion summary returned by the specialist}
+
+---
+```
 
 Then spawn `pace-documentation-specialist` as a Task in patch mode:
 
