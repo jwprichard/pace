@@ -4,13 +4,15 @@ description: Closes out a completed plan — full PROJECT.md refresh and .pace/ 
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Task
 ---
 
 <objective>
 Close out a completed plan cleanly. Refresh the project map with a full rescan,
-then delete runtime files that belong to this plan only.
+then delete runtime files that belong to this plan only. For roadmap phases,
+handle PR creation, merge, and phase advancement automatically.
 
 Preserve the persistent .pace/ artifacts (PROJECT.md, AGENT-REGISTRY.md, agents/).
 Delete only the plan-specific runtime files.
@@ -33,6 +35,17 @@ The plan is not yet complete (status: {status}).
 Finish execution first, then run /pace:complete.
 Run /pace:execute to continue, or /pace:resume to pick up from where you left off.
 ```
+
+### Phase detection
+
+If `.pace/PLAN.md` exists, read the header lines and look for a `_Phase: {N}_` marker.
+If found, set `roadmap_phase = {N}`. Otherwise set `roadmap_phase = null`.
+
+Also check the current branch:
+```bash
+git branch --show-current
+```
+Store the result as `current_branch`.
 
 ## Step 2 — Synthesise episodic memory into semantic memory
 
@@ -102,6 +115,81 @@ Capture the current commit hash and timestamp.
 
 Wait for the task to complete.
 
+## Step 3b — PR, merge, and phase advancement (roadmap phases only)
+
+If `roadmap_phase` is `null`, skip this step entirely.
+
+If `roadmap_phase` is set:
+
+### Create PR
+
+Check if a PR already exists for the current branch:
+```bash
+gh pr view --json number 2>/dev/null
+```
+
+If no PR exists, create one. Gather context for the PR body:
+- Read `.pace/requirements/brief.md` (if exists) for what was requested
+- Read `.pace/PLAN.md` for the objective and task list
+- Read `.pace/STATE.md` for task completion status
+- Read `.pace/memory/episode.md` (if exists) for what was built
+- Run `git log main..HEAD --oneline` for the commit list
+
+Create the PR:
+```bash
+gh pr create --title "{plan title}" --body "$(cat <<'EOF'
+## Summary
+{2-3 sentence summary of what this phase delivered}
+
+## Tasks completed
+{task list from STATE.md with status markers}
+
+## Commits
+{commit list}
+
+---
+🤖 Generated with [PACE](https://github.com/jwprichard/pace) — Plan, Assign, Coordinate, Execute
+EOF
+)"
+```
+
+If `gh` is not available, tell the user:
+```
+gh CLI not found. Create a PR manually for branch {current_branch}, then run /pace:complete again.
+```
+Then stop.
+
+### Merge PR
+
+Attempt to merge:
+```bash
+gh pr merge --squash --delete-branch
+```
+
+If the merge fails (e.g., branch protection requires reviews), tell the user:
+```
+PR created but could not be auto-merged (likely requires review).
+Merge the PR manually, then run /pace:complete again to finish cleanup.
+```
+Then stop.
+
+### Switch to main
+
+After successful merge:
+```bash
+git checkout main
+git pull origin main
+```
+
+### Update ROADMAP.md
+
+Read `.pace/ROADMAP.md`. Change Phase {roadmap_phase}'s `**Status:** in_progress`
+to `**Status:** complete`.
+
+Check if any phases still have `**Status:** pending`:
+- If yes: store `next_phase = {next pending phase number and title}`
+- If no: store `next_phase = null` (roadmap complete)
+
 ## Step 4 — Clean up runtime files
 
 Delete the plan-specific runtime files:
@@ -122,7 +210,7 @@ Do NOT delete:
 
 ## Step 5 — Confirm
 
-Tell the user:
+If `roadmap_phase` is `null` (standalone plan):
 
 ```
 Plan closed.
@@ -132,6 +220,30 @@ PROJECT.md refreshed with latest codebase state.
 Runtime files cleaned up (PLAN.md, STATE.md, episode.md, requirements/, drafts/).
 
 Ready for the next plan. Run /pace:plan to start.
+```
+
+If `roadmap_phase` is set and `next_phase` exists:
+
+```
+Phase {roadmap_phase} complete. PR merged to main.
+
+Episodic memory synthesised into semantic memory.
+PROJECT.md refreshed with latest codebase state.
+Runtime files cleaned up.
+
+Next up: Phase {next_phase number} — {next_phase title}
+Run /pace:plan to start planning it.
+```
+
+If `roadmap_phase` is set and `next_phase` is `null`:
+
+```
+Phase {roadmap_phase} complete. PR merged to main.
+All roadmap phases are now complete.
+
+Episodic memory synthesised into semantic memory.
+PROJECT.md refreshed with latest codebase state.
+Runtime files cleaned up.
 ```
 
 </process>

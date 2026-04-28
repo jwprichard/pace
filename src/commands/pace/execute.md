@@ -4,6 +4,7 @@ description: Reads PLAN.md, delegates each task to the assigned specialist agent
 allowed-tools:
   - Read
   - Edit
+  - Bash
   - Task
   - TaskCreate
   - TaskUpdate
@@ -130,7 +131,17 @@ You are executing **Task {number}: {title}** as part of a PACE plan.
   to modify a file outside the list, note it in your completion summary — do
   not silently expand scope.
 - Do not implement work outside your assignment.
+- Do not run any `git` commands — no `git add`, `git commit`, or `git push`.
+  The orchestrator handles all commits.
 - When done, confirm each success criterion is met.
+- Your completion summary MUST end with a `## Files Modified` section listing
+  every file you created, modified, or deleted. One file path per line. Example:
+  ```
+  ## Files Modified
+  src/new-file.ts
+  src/existing-file.ts
+  src/removed-file.ts
+  ```
 
 ## Allowed Tools
 Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch
@@ -159,7 +170,42 @@ Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch
 
 Wait for **all** tasks in the wave to complete before proceeding to the next wave.
 
-### 3c — Record wave outcomes
+### 3c — Commit wave changes
+
+After all tasks in the wave complete, commit each task's changes individually.
+Process tasks in task-number order, one at a time:
+
+For each **successful** task in the wave:
+
+1. Parse the `## Files Modified` section from the agent's completion summary.
+   Extract all file paths listed.
+2. Stage the files:
+   ```bash
+   git add {file1} {file2} ...
+   ```
+   Quote any paths containing spaces. If a listed file does not exist on disk
+   (the agent deleted it), `git add` still stages the deletion correctly.
+3. Check if there are staged changes:
+   ```bash
+   git diff --cached --quiet
+   ```
+   - If there are staged changes (exit code 1), commit:
+     ```bash
+     git commit -m "{task title}"
+     ```
+   - If there are no staged changes (exit code 0), skip the commit — the agent
+     may have made no effective changes.
+
+If the agent did not include a `## Files Modified` section, fall back to:
+```bash
+git add -A
+git diff --cached --quiet || git commit -m "{task title}"
+```
+This is a safety net — agents should always report their files.
+
+After all task commits for the wave are done, proceed to 3d.
+
+### 3d — Record wave outcomes
 
 For each task in the wave:
 
