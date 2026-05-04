@@ -400,6 +400,7 @@ One sentence describing which aspect of the work you are planning.
 **Depends on:** task numbers this must wait for, or "none"
 **Files likely affected:** comma-separated list of specific file paths where known.
 Use "TBD" only when files genuinely cannot be determined at planning time — not as a default.
+**Service:** {service-name} (see Service field rules below)
 **Agent:** @agent-name-from-registry (the specialist who should implement this)
 **Allowed tools:** (optional) comma-separated restriction from the Standard Specialist Toolkit.
 Omit this field entirely to grant the full toolkit: Read, Write, Edit, NotebookEdit,
@@ -429,6 +430,13 @@ Any constraints, risks, or decisions that the synthesiser should factor in.
 ## Notes
 Anything else relevant from your domain perspective.
 ```
+
+**Service field rules:**
+If the Codebase Context contains a `## Services` section, add a `**Service:** {service-name}`
+field to each task where the service can be determined from the files affected. The service
+name must match an entry from the `## Services` table in PROJECT.md — planners do not invent
+service names. Omit the `**Service:**` field entirely when the project has no `## Services`
+section or when the service cannot be determined for a specific task.
 
 Propose as many tasks as the work genuinely requires. Do not pad with unnecessary tasks.
 Only include tasks within your domain expertise.
@@ -475,6 +483,7 @@ One sentence describing the testing perspective you are covering.
 **Priority:** high | medium | low
 **Depends on:** none
 **Files likely affected:** comma-separated list of specific file paths, or "TBD" only if genuinely unknown
+**Service:** {service-name} (see Service field rules below)
 **Agent:** @agent-name-from-registry (the testing specialist who should implement this)
 **Allowed tools:** (optional) omit to grant the Standard Specialist Toolkit
 **Success criteria:**
@@ -501,6 +510,13 @@ Any constraints, risks, or test-strategy decisions the synthesiser should factor
 ## Notes
 Anything else relevant from a testing perspective.
 ```
+
+**Service field rules:**
+If the Codebase Context contains a `## Services` section, add a `**Service:** {service-name}`
+field to each task where the service can be determined from the files affected. The service
+name must match an entry from the `## Services` table in PROJECT.md — planners do not invent
+service names. Omit the `**Service:**` field entirely when the project has no `## Services`
+section or when the service cannot be determined for a specific task.
 
 Rules you must follow:
 - Propose exactly one test task per expected feature described in the requirements.
@@ -540,6 +556,8 @@ The requirements that drove these drafts are:
 {contents of .pace/requirements/brief.md}
 
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
+
+Preserve `**Service:**` annotations from draft plans during merge. If two drafts propose the same task with different service annotations, keep the annotation that matches the `## Services` table in PROJECT.md.
 
 {If `roadmap_phase` is set, append:}
 
