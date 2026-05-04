@@ -66,6 +66,7 @@ One sentence describing what this plan achieves when complete.
 **Agent:** @agent-name
 **Depends on:** none
 **Files:** comma-separated list of specific file paths, or "TBD" only if genuinely unknown
+**Service:** (optional) the service this task belongs to, matching a row in the `## Services` table of PROJECT.md. Present only when the project has a `## Services` section in PROJECT.md.
 **Allowed tools:** (optional) comma-separated restriction from the Standard Specialist Toolkit.
 Omit this field entirely to grant the full toolkit: Read, Write, Edit, NotebookEdit,
 Bash, Glob, Grep, WebSearch, WebFetch. Only specify to restrict below this default.
@@ -94,6 +95,7 @@ Re-read the written PLAN.md and confirm:
 - Every task has at least one success criterion
 - Every task has a `Depends on:` field
 - Every task either has an `Allowed tools:` restriction field or omits it (omission = Standard Specialist Toolkit: Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch)
+- `**Service:**` is NOT required on every task — it is optional. Do not flag its absence as an error. When present, verify it matches a row in the `## Services` table of PROJECT.md.
 - The objective matches the requirements passed in
 
 Report back a one-line summary: how many tasks, which agents assigned,
