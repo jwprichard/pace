@@ -32,7 +32,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | Agent | Role |
 |---|---|
 | `pace-synthesiser` | Merges parallel draft plans into a single `PLAN.md` |
-| `pace-codebase-analyst` | Analyses raw codebase data and writes `PROJECT.md` |
+| `pace-codebase-analyst` | Analyses raw codebase data and writes `PROJECT.md` — detects monorepo services when present |
 | `pace-documentation-specialist` | Patches or rewrites `PROJECT.md` after tasks complete |
 | `pace-verification-specialist` | Checks completed work against success criteria |
 
@@ -54,7 +54,7 @@ Run `/pace:sync-agents` after installing or updating agents.
   ROADMAP.md               # Phase decomposition for large features (persists across plans)
   PLAN.md                  # Current plan
   STATE.md                 # Operational memory — task status and blockers
-  PROJECT.md               # Codebase map — stack, structure, conventions
+  PROJECT.md               # Codebase map — stack, structure, conventions (includes ## Services table for monorepo projects)
   memory/
     episode.md             # Episodic memory — what was built this execution (cleared at complete)
     semantic.md            # Semantic memory — cross-plan decisions and patterns (never cleared)
