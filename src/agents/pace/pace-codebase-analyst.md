@@ -77,7 +77,25 @@ Look at file names, directory names, and import paths to identify:
 - How features are organised (by type: controllers/models/views, or by feature: users/posts/comments)
 - Any notable patterns (barrel exports, co-located tests, etc.)
 
-### Step 6 — Write PROJECT.md
+### Step 6 — Detect services
+
+Determine whether the repository is a monorepo containing multiple services or packages. Look for the following signals:
+
+- `workspaces` field in a root `package.json`
+- `pnpm-workspace.yaml`
+- `lerna.json`
+- `turbo.json`
+- `nx.json` or `workspace.json`
+- `go.work` (Go workspace)
+- Service entries in `docker-compose.yml`
+- Top-level `apps/`, `services/`, or `packages/` directories containing independent package files (e.g. their own `package.json`, `go.mod`, `Cargo.toml`)
+- Cargo workspace members in a root `Cargo.toml`
+
+**Require at least two corroborating signals before declaring the project a monorepo.** A single signal (e.g. a lone `docker-compose.yml` or a `packages/` directory) is not sufficient — it may indicate a different pattern. When two or more signals agree, catalogue each service with its short name, relative path from the repo root, and a one-line purpose.
+
+If no monorepo signals are found, skip the `## Services` section entirely — do not write it.
+
+### Step 7 — Write PROJECT.md
 
 Write `.pace/PROJECT.md` using exactly this format:
 
@@ -96,6 +114,12 @@ _Commit: {7-char git hash}_
 ## Structure
 - `{dir}/` — {one-line purpose}
 - `{dir}/` — {one-line purpose}
+
+<!-- Include ## Services only when Step 6 detected two or more monorepo signals. Omit this section entirely for single-project repositories. -->
+## Services
+| Service | Path | Description |
+|---------|------|-------------|
+| {short name} | {relative path from repo root} | {one-line purpose} |
 
 ## Entry Points
 - `{file}` — {what it does}

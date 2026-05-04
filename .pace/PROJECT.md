@@ -1,6 +1,6 @@
 # PROJECT MAP
-_Scanned: 2026-04-15T00:30:00Z_
-_Commit: eabde35_
+_Scanned: 2026-05-04T22:44:53Z_
+_Commit: 3c0263a_
 
 ## Stack
 - **Language:** Markdown (command/agent definitions), Bash (installer)
@@ -10,22 +10,28 @@ _Commit: eabde35_
 - **Test runner:** none detected
 
 ## Structure
-- `src/commands/pace/` — slash-command definitions installed into `.claude/commands/pace/`
+- `src/commands/pace/` — slash-command definitions (11 commands) installed into `.claude/commands/pace/`
 - `src/agents/` — top-level agent definitions (pace-synthesiser)
 - `src/agents/pace/` — PACE specialist sub-agents (codebase-analyst, documentation-specialist, verification-specialist)
 - `docs/` — user-facing documentation (README, architecture)
-- `.pace/` — runtime state (PLAN.md, STATE.md, AGENT-REGISTRY.md, per-division agent lists, drafts)
-- `.pace/agents/` — tier-2 agent registry files, one per division
+- `.pace/` — runtime state (PLAN.md, STATE.md, AGENT-REGISTRY.md, drafts, memory, requirements)
+- `.pace/agents/` — tier-2 agent registry files, one per division (15 divisions)
+- `.pace/memory/` — episodic and semantic memory files
+- `.pace/requirements/` — compiled interview brief and optional research findings
+- `.pace/drafts/` — intermediate draft plans from parallel domain planners
 
 ## Entry Points
 - `install.sh` — copies `src/commands/` and `src/agents/` into `~/.claude/` or `./.claude/`; supports `--global`, `--local`, `--force`
 - `uninstall.sh` — removes previously installed PACE files from target destination
 - `/pace:sync-agents` — scans installed agents, writes tier-1 and tier-2 registry files
-- `/pace:plan` — interviews user, spawns domain planner agents in parallel, synthesises into `PLAN.md`
+- `/pace:plan` — interviews user, spawns domain planner agents in parallel, synthesises into `PLAN.md`; supports `--tdd`, `--research`, `--abandon`
 - `/pace:execute` — reads `PLAN.md`, delegates each task to the assigned specialist agent, tracks progress in `STATE.md`
 - `/pace:verify` — checks completed work against `PLAN.md` success criteria; auto-fix loop on NEEDS WORK verdict
+- `/pace:fix` — dispatches targeted fixes; `--light` for quick one-shot fixes
 - `/pace:resume` — reads `STATE.md`, picks up from the last incomplete task
+- `/pace:roadmap` — interviews user, decomposes a large feature into phases, produces `ROADMAP.md`; supports `--research`, `--abandon`
 - `/pace:complete` — reconciles branch state, finalises PR, triggers full PROJECT.md refresh
+- `/pace:create-pr` — creates a PR summarising what was requested, delivered, and verified; supports `--auto-review`
 - `/pace:agent` — dispatches a specialist agent with baked-in codebase context
 - `/pace:scan` — standalone codebase scan producing `.pace/PROJECT.md`
 
@@ -33,6 +39,8 @@ _Commit: eabde35_
 - `install.sh` — sets `VERSION="0.1.0"`, controls install targets and conflict handling
 - `.claude/settings.local.json` — project-local Claude Code settings
 - `CLAUDE.md` — project instructions loaded into every Claude Code session; defines key design principles, commands, agents, and runtime file layout
+- `CONTEXT.md` — full project context, design decisions, and build order (gitignored)
+- `.gitignore` — excludes CONTEXT.md, EXECUTE-CONTEXT.md, and runtime files (PLAN.md, STATE.md, DECISIONS.md, drafts/)
 
 ## Conventions
 - Commands are `.md` files with YAML frontmatter (`name`, `description`, `argument-hint`, `allowed-tools`)
@@ -43,7 +51,9 @@ _Commit: eabde35_
 - Tasks in PLAN.md are atomic: one agent, one session, observable success criteria
 - Agent registry uses a two-tier structure: tier-1 division index always loaded, tier-2 division detail loaded on demand
 - `--tdd` flag opt-in: when passed to `/pace:plan`, threads TDD requirements through planner team assembly and synthesiser enforcement
-- `--research` flag opt-in: when passed to `/pace:plan`, activates research mode; Stage 1.5 runs before the interview — a research Task (dangerouslySkipPermissions: true) searches the web and writes findings to `.pace/research.md`, then displays a bullet summary inline; detected independently of `--tdd` in Stage 2a with its own flag stripping; in Stage 4, full contents of `.pace/research.md` are appended as a `## Research Findings` section to every domain planner Task prompt and (when `tdd_mode` is also true) to the TDD peer planner Task prompt; in Stage 5, the same findings are appended to the synthesiser prompt and the synthesiser is instructed to write `_Research: enabled_` immediately after `_Generated: {timestamp}_` in PLAN.md, enabling downstream commands to detect research mode by reading PLAN.md
+- `--research` flag opt-in: when passed to `/pace:plan`, activates research mode; Stage 1.5 runs before the interview — a research Task searches the web and writes findings to `.pace/requirements/research.md`, then displays a bullet summary inline; in Stage 4, full contents are appended to every domain planner Task prompt; in Stage 5, the synthesiser writes `_Research: enabled_` in PLAN.md
+- `## Services` section in PROJECT.md is conditional — the codebase analyst writes it only when two or more monorepo signals are detected (workspace configs, `apps/`/`services/`/`packages/` dirs with their own package files, `docker-compose.yml` service entries, etc.); omitted entirely for single-project repos
+- `**Service:**` field in PLAN.md tasks is optional — added by domain and TDD planners only when PROJECT.md contains a `## Services` section; service names must match a row in the Services table; synthesiser preserves Service annotations during merge and does not flag absence as an error
 
 ## Test Setup
 - **Runner:** none
