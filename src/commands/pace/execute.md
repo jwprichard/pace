@@ -58,13 +58,14 @@ institutional context — cross-plan decisions and patterns — when building ag
 
 ### Model override
 
-If `.pace/settings.md` exists, read it and look for a `model:` line in the `## Model`
-section. If the line has a non-empty value (e.g. `model: sonnet`), store that value
-as the **model override** for all specialist agent spawns during this execution.
+If `.pace/settings.md` exists, read it and look for an `execute-model:` line in the
+`## Model` section. If the line has a non-empty value (e.g. `execute-model: sonnet`),
+store that value as the **model override** for all specialist agent spawns during
+this execution.
 
-If the file does not exist, the `model:` line is missing, or its value is blank
-(e.g. `model:` with nothing after it), no model override is used — agents will
-inherit the session model as normal.
+If the file does not exist, the `execute-model:` line is missing, or its value is
+blank (e.g. `execute-model:` with nothing after it), no model override is used —
+agents will inherit the session model as normal.
 
 The orchestrator's own model is never changed by this setting.
 

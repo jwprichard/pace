@@ -51,9 +51,9 @@ Read `.pace/PROJECT.md`. Extract the `## Stack` and `## Structure` sections.
 
 ## Step 3 — Load model override setting
 
-Read `.pace/settings.md`. Look for a line matching `model: <value>` (e.g. `model: sonnet`).
+Read `.pace/settings.md`. Look for a line matching `execute-model: <value>` (e.g. `execute-model: sonnet`).
 
-- If the file does not exist, or the `model:` line is empty / missing a value after the colon, set `model_override` to **empty** (no override).
+- If the file does not exist, or the `execute-model:` line is empty / missing a value after the colon, set `model_override` to **empty** (no override).
 - If a non-empty value is present (e.g. `sonnet`, `opus`, `haiku`), store it as `model_override`.
 
 This value is used in Steps 5 and 6 when spawning Tasks.

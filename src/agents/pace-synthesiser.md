@@ -98,7 +98,33 @@ Re-read the written PLAN.md and confirm:
 - `**Service:**` is NOT required on every task — it is optional. Do not flag its absence as an error. When present, verify it matches a row in the `## Services` table of PROJECT.md.
 - The objective matches the requirements passed in
 
+### Specificity check
+
+Plans must be detailed enough for any model to execute without needing to make
+architectural or scope decisions. Check every task against these rules and fix
+violations in-place before finalising:
+
+1. **File paths are specific** — `**Files:**` must list actual file paths, not
+   `TBD`. If you can determine the likely files from the codebase context and
+   task description, fill them in. If genuinely unknowable, keep `TBD` but add
+   a `**Note:**` field explaining why.
+2. **Success criteria are observable** — each criterion must reference a concrete
+   artifact: a file path, a command with expected output, an endpoint with expected
+   response, or a specific string/export/interface. Criteria like "the feature works"
+   or "tests pass" are too vague — rewrite them to specify exactly what to check.
+3. **Task descriptions are self-contained** — the description plus files plus
+   criteria must give the agent everything it needs to start work. If a task
+   requires knowledge of a decision made in another task, that decision must be
+   stated explicitly in the description — not left for the agent to discover.
+4. **No ambiguous scope** — if a task says "implement X" without specifying the
+   approach, and multiple approaches exist, pick one and state it. The executing
+   agent should not need to choose between architectural alternatives.
+
+For each violation found, fix it directly in PLAN.md. If you cannot fix it
+(e.g., file paths genuinely cannot be determined), add a `**Note:**` field to
+the task explaining the gap.
+
 Report back a one-line summary: how many tasks, which agents assigned,
-any issues found.
+any issues found, and how many specificity fixes were applied.
 
 </process>

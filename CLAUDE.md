@@ -25,6 +25,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — `--light` for quick one-shot fixes |
 | `/pace:resume` | Reads `STATE.md`, picks up from the last incomplete task |
 | `/pace:create-pr` | Creates a PR summarising what was requested, delivered, and verified |
+| `/pace:settings` | View and manage PACE settings (model overrides, etc.) |
 | `/pace:complete` | Reconciles branch state, finalises PR |
 
 ## Agents
@@ -66,28 +67,33 @@ Run `/pace:sync-agents` after installing or updating agents.
 
 ## Settings
 
-PACE reads `.pace/settings.md` for persistent workflow configuration. This file is never cleared by `/pace:complete`.
+PACE reads `.pace/settings.md` for persistent workflow configuration. This file is never cleared by `/pace:complete`. Use `/pace:settings` to view and modify settings interactively, or pass arguments directly (e.g. `/pace:settings set execute-model opus`).
 
 ### Model Override
 
-You can override the model used by specialist agents without changing the orchestrator's own model. Set the `model:` field in `.pace/settings.md`:
+Two separate model settings control planning and execution phases independently:
 
 ```markdown
 # Settings
 _Persistent configuration for the PACE workflow. This file is not cleared by /pace:complete._
 
 ## Model
-<!-- Valid values: sonnet, opus, haiku -->
-model: sonnet
+plan-model: opus
+execute-model: sonnet
 ```
 
-**Accepted values**: `sonnet`, `opus`, `haiku`
+| Setting | Accepted values | Which agents it controls |
+|---|---|---|
+| `plan-model` | `sonnet`, `opus`, `haiku` | Domain planners, synthesiser, research agents, codebase analyst |
+| `execute-model` | `sonnet`, `opus`, `haiku` | Specialist implementers, verification, fix agents, documentation patches |
 
-**Which commands read it**: Every command that spawns specialist agents — `/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:plan`, `/pace:roadmap`, `/pace:complete`, `/pace:scan`, and `/pace:agent`.
+**Which commands read which setting:**
+- **`plan-model`**: `/pace:plan`, `/pace:roadmap`, `/pace:scan`
+- **`execute-model`**: `/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:complete`, `/pace:agent`
 
 **What it affects**: Only the specialist agents spawned by these commands. The orchestrator session model is unaffected — it continues to run on whatever model you started it with.
 
-**When no `settings.md` exists** (or the `model:` field is blank): Behaviour is unchanged. Specialist agents inherit the session model, exactly as they did before this feature existed.
+**When no `settings.md` exists** (or a field is blank): Behaviour is unchanged. Agents inherit the session model, exactly as they did before this setting existed.
 
 ## Repository Structure
 
@@ -111,6 +117,7 @@ pace/
         resume.md
         create-pr.md
         complete.md
+        settings.md
   docs/
     README.md
     CONTRIBUTING.md

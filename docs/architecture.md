@@ -93,7 +93,7 @@ flowchart LR
         registry["AGENT-REGISTRY.md\n(agent index)"]
         plan["PLAN.md\n(tasks + agents + dependencies)"]
         state["STATE.md\n(execution progress)"]
-        settings["settings.md\n(model override)"]
+        settings["settings.md\n(plan-model / execute-model)"]
     end
 
     subgraph outputs["Codebase"]
@@ -104,14 +104,14 @@ flowchart LR
     user -->|"/pace:plan"| plan
     plan -->|approved| state
     project & registry & plan & state -->|context| orchestrator["Orchestrator"]
-    settings -->|model parameter| orchestrator
+    settings -->|plan-model / execute-model| orchestrator
     orchestrator -->|tailored brief| specialists["Specialist Agents"]
     specialists -->|completion summary| documenter["pace-documenter"]
     specialists -->|implementation| code
     documenter -->|patch| project
 ```
 
-**Settings override**: The orchestrator reads `settings.md` at execution time and passes its `model` value to every specialist agent spawn. This controls which model specialists run on but never affects the orchestrator's own model, which always matches the session model.
+**Settings override**: The orchestrator reads `settings.md` at command time and passes the appropriate model parameter to specialist agent spawns. Planning commands (`/pace:plan`, `/pace:roadmap`, `/pace:scan`) read `plan-model`. Execution commands (`/pace:execute`, `/pace:verify`, `/pace:fix`, `/pace:complete`, `/pace:agent`) read `execute-model`. This allows planning agents to run on a stronger model for architectural reasoning while execution agents run on a faster, cheaper model for bounded work. The orchestrator's own model always matches the session model.
 
 ## PROJECT.md Freshness
 

@@ -66,7 +66,7 @@ PACE creates a `.pace/` directory in your project root:
   AGENT-REGISTRY.md   # Tier 1 — division index
   PLAN.md              # Current plan with tasks and success criteria
   STATE.md             # Progress tracking across sessions
-  settings.md          # Persistent configuration — model override, etc. (not cleared by /pace:complete)
+  settings.md          # Persistent configuration — plan-model / execute-model (not cleared by /pace:complete)
   agents/              # Tier 2 — per-division agent lists
     engineering.md
     design.md
@@ -77,26 +77,31 @@ These files are generated — don't edit them by hand (except `STATE.md` if you 
 
 ## Configuration
 
-PACE reads `.pace/settings.md` for persistent workflow configuration. This file is never cleared by `/pace:complete`, so your preferences carry across plans.
+PACE reads `.pace/settings.md` for persistent workflow configuration. This file is never cleared by `/pace:complete`, so your preferences carry across plans. Use `/pace:settings` to view and modify settings interactively, or pass arguments directly (e.g. `/pace:settings set execute-model opus`).
 
 ### Model Override
 
-Run specialist agents on a cheaper or faster model to save tokens while keeping the orchestrator on your session model. Create `.pace/settings.md` with the following content:
+Two separate settings control planning and execution phases independently:
 
 ```markdown
 # Settings
 _Persistent configuration for the PACE workflow. This file is not cleared by /pace:complete._
 
 ## Model
-<!-- Valid values: sonnet, opus, haiku -->
-model: sonnet
+plan-model: opus
+execute-model: sonnet
 ```
 
-**Accepted values**: `sonnet`, `opus`, `haiku`
+| Setting | Accepted values | Which agents it controls |
+|---|---|---|
+| `plan-model` | `sonnet`, `opus`, `haiku` | Domain planners, synthesiser, research agents, codebase analyst |
+| `execute-model` | `sonnet`, `opus`, `haiku` | Specialist implementers, verification, fix agents, documentation patches |
 
-When set, every command that spawns specialist agents (`/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:plan`, `/pace:roadmap`, `/pace:complete`, `/pace:scan`, `/pace:agent`) passes the configured model to each agent. The orchestrator session model is unaffected.
+**Which commands read which setting:**
+- **`plan-model`**: `/pace:plan`, `/pace:roadmap`, `/pace:scan`
+- **`execute-model`**: `/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:complete`, `/pace:agent`
 
-When no `settings.md` exists or the `model:` field is blank, specialist agents inherit the session model as before.
+The orchestrator session model is unaffected. When a field is blank or `settings.md` does not exist, agents inherit the session model as before.
 
 ## Key Principles
 
