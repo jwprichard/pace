@@ -40,6 +40,18 @@ Read the full argument string. Detect flags independently:
 - If the argument contains `--light`: set `light_mode = true`, strip `--light` from the string
 - The remaining string after stripping is the user's fix description
 
+### Model override
+
+If `.pace/settings.md` exists, read it and look for a `model:` line in the `## Model`
+section. If the line has a non-empty value (e.g. `model: sonnet`), store that value
+as the **model override** for all specialist agent spawns during this command.
+
+If the file does not exist, the `model:` line is missing, or its value is blank
+(e.g. `model:` with nothing after it), no model override is used — agents will
+inherit the session model as normal.
+
+The orchestrator's own model is never changed by this setting.
+
 ---
 
 ## LIGHT MODE
@@ -98,7 +110,11 @@ file paths and their matching lines.
 ### L6 — Dispatch
 
 Spawn the selected agent as a Task with `dangerouslySkipPermissions: true`
-and this prompt (substitute all `{...}` placeholders):
+and this prompt (substitute all `{...}` placeholders).
+
+If a **model override** was read in Stage 0, include `model: {model_value}` in
+the Task tool call. When no model override is set, omit the `model` parameter
+entirely so the agent inherits the session default:
 
 ---
 You are applying a targeted fix as @{agent name}.
@@ -138,7 +154,10 @@ Wait for the task to complete.
 
 ### L7 — Patch documentation
 
-Spawn `pace-documentation-specialist` as a Task in patch mode:
+Spawn `pace-documentation-specialist` as a Task in patch mode.
+If a **model override** was read in Stage 0, include `model: {model_value}` in
+this Task tool call. When no model override is set, omit the `model` parameter
+entirely:
 
 ---
 Patch mode. Fix just completed.
@@ -285,7 +304,11 @@ Dispatching now...
 ### Stage 6 — Dispatch fix agents
 
 For each fix task, spawn the assigned agent as a parallel Task with
-`dangerouslySkipPermissions: true` and this prompt (substitute all placeholders):
+`dangerouslySkipPermissions: true` and this prompt (substitute all placeholders).
+
+If a **model override** was read in Stage 0, include `model: {model_value}` in
+every Task tool call. When no model override is set, omit the `model` parameter
+entirely so agents inherit the session default:
 
 ---
 You are applying **Fix {N}: {title}** as part of a PACE plan.
@@ -344,7 +367,10 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Spawn `pace-documentation-specialist` as a fire-and-forget Task in patch mode:
+Spawn `pace-documentation-specialist` as a fire-and-forget Task in patch mode.
+If a **model override** was read in Stage 0, include `model: {model_value}` in
+this Task tool call. When no model override is set, omit the `model` parameter
+entirely:
 
 ```
 Patch mode. Fix just completed.
