@@ -56,6 +56,18 @@ If `.pace/PROJECT.md` exists:
 If `.pace/memory/semantic.md` exists, read it. This gives the orchestrator
 institutional context — cross-plan decisions and patterns — when building agent prompts.
 
+### Model override
+
+If `.pace/settings.md` exists, read it and look for a `model:` line in the `## Model`
+section. If the line has a non-empty value (e.g. `model: sonnet`), store that value
+as the **model override** for all specialist agent spawns during this execution.
+
+If the file does not exist, the `model:` line is missing, or its value is blank
+(e.g. `model:` with nothing after it), no model override is used — agents will
+inherit the session model as normal.
+
+The orchestrator's own model is never changed by this setting.
+
 ## Stage 2 — Load Tasks and Build Waves
 
 Parse all tasks from the `## Tasks` section of STATE.md:
@@ -118,7 +130,11 @@ If `.pace/PROJECT.md` exists, read the `## Stack` and `## Structure` sections
 to prepend as codebase context in each agent's prompt.
 
 Spawn all tasks in the wave as **simultaneous parallel Task calls** using this
-prompt for each (substitute all `{...}` placeholders):
+prompt for each (substitute all `{...}` placeholders).
+
+If a **model override** was read in Stage 1, include `model: {model_value}` in
+every Task tool call. When no model override is set, omit the `model` parameter
+entirely so agents inherit the session default:
 
 ---
 You are executing **Task {number}: {title}** as part of a PACE plan.
@@ -238,7 +254,10 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Then spawn `pace-documentation-specialist` as a Task in patch mode:
+Then spawn `pace-documentation-specialist` as a Task in patch mode.
+If a **model override** was read in Stage 1, include `model: {model_value}` in
+this Task tool call. When no model override is set, omit the `model` parameter
+entirely:
 
 ```
 Patch mode. Task just completed.
