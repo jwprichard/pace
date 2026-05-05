@@ -49,7 +49,16 @@ Then continue without context.
 **If it exists:**
 Read `.pace/PROJECT.md`. Extract the `## Stack` and `## Structure` sections.
 
-## Step 3 — Find relevant files
+## Step 3 — Load model override setting
+
+Read `.pace/settings.md`. Look for a line matching `model: <value>` (e.g. `model: sonnet`).
+
+- If the file does not exist, or the `model:` line is empty / missing a value after the colon, set `model_override` to **empty** (no override).
+- If a non-empty value is present (e.g. `sonnet`, `opus`, `haiku`), store it as `model_override`.
+
+This value is used in Steps 5 and 6 when spawning Tasks.
+
+## Step 4 — Find relevant files
 
 Grep for terms from the task description in the codebase to surface relevant files.
 
@@ -59,10 +68,12 @@ a specific file type or component, glob for it.
 
 Collect up to 10 most relevant file paths and their matching lines.
 
-## Step 4 — Spawn the specialist
+## Step 5 — Spawn the specialist
 
 Spawn the named agent as a Task with the following prompt
-(substitute all `{...}` placeholders):
+(substitute all `{...}` placeholders).
+
+**If `model_override` is set**, include `model: {model_override}` in the Task call.
 
 ---
 You are executing a one-shot task as @{agent name}.
@@ -73,7 +84,7 @@ You are executing a one-shot task as @{agent name}.
 
 ## Relevant Files
 
-{grep results and file paths from Step 3, or "No relevant files pre-identified."}
+{grep results and file paths from Step 4, or "No relevant files pre-identified."}
 
 ## Your Task
 
@@ -89,10 +100,12 @@ Return a brief summary:
 
 Wait for the task to complete.
 
-## Step 5 — Update documentation
+## Step 6 — Update documentation
 
 After the specialist completes, spawn `pace-documentation-specialist` as a Task
-in patch mode:
+in patch mode.
+
+**If `model_override` is set**, include `model: {model_override}` in the Task call.
 
 ---
 Patch mode. Task just completed.
@@ -106,7 +119,7 @@ Read `.pace/PROJECT.md` and update any sections affected by the above changes.
 
 Wait for the documentation task to complete.
 
-## Step 6 — Report
+## Step 7 — Report
 
 Tell the user:
 ```
