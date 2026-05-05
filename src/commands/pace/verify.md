@@ -35,7 +35,23 @@ Read `.pace/PLAN.md`. If it does not exist, stop:
 No PLAN.md found. Cannot verify without a plan.
 ```
 
+### Model override
+
+If `.pace/settings.md` exists, read it and look for a `model:` line in the `## Model`
+section. If the line has a non-empty value (e.g. `model: sonnet`), store that value
+as the **model override** for all specialist agent spawns during this command.
+
+If the file does not exist, the `model:` line is missing, or its value is blank
+(e.g. `model:` with nothing after it), no model override is used — agents will
+inherit the session model as normal.
+
+The orchestrator's own model is never changed by this setting.
+
 ## Step 2 — Spawn verification specialist
+
+If a **model override** was read in Step 1, include `model: {model_value}` in
+the Task tool call. When no model override is set, omit the `model` parameter
+entirely so the agent inherits the session default.
 
 Spawn `pace-verification-specialist` as a Task with the following prompt:
 
@@ -95,8 +111,12 @@ Run /pace:verify again when you're ready to re-check.
 Read `.pace/VERIFICATION.md`. For each failing task:
 - Note the agent, files, allowed tools, and the specific failing criteria
 
-Spawn each failing task's agent as a **parallel Task** with `dangerouslySkipPermissions: true`
-and this prompt:
+Spawn each failing task's agent as a **parallel Task** with `dangerouslySkipPermissions: true`.
+If a **model override** was read in Step 1, include `model: {model_value}` in
+each Task tool call. When no model override is set, omit the `model` parameter
+entirely so agents inherit the session default.
+
+Use this prompt:
 
 ---
 You are fixing a verification failure as @{agent}.
@@ -130,7 +150,8 @@ Wait for all fix agents to complete.
 
 ## Step 5 — Re-verify
 
-Spawn `pace-verification-specialist` again (same prompt as Step 2).
+Spawn `pace-verification-specialist` again (same prompt as Step 2, including
+`model: {model_value}` in the Task call when the model override is set).
 
 Wait for it to complete, then return to **Step 3** to present the new verdict.
 
