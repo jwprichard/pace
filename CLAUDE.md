@@ -55,6 +55,7 @@ Run `/pace:sync-agents` after installing or updating agents.
   PLAN.md                  # Current plan
   STATE.md                 # Operational memory — task status and blockers
   PROJECT.md               # Codebase map — stack, structure, conventions (includes ## Services table for monorepo projects)
+  settings.md              # Persistent workflow configuration — model override, etc. (not cleared by /pace:complete)
   memory/
     episode.md             # Episodic memory — what was built this execution (cleared at complete)
     semantic.md            # Semantic memory — cross-plan decisions and patterns (never cleared)
@@ -62,6 +63,31 @@ Run `/pace:sync-agents` after installing or updating agents.
     brief.md               # Compiled interview requirements (plan-specific)
     research.md            # Research findings (plan-specific, --research only)
 ```
+
+## Settings
+
+PACE reads `.pace/settings.md` for persistent workflow configuration. This file is never cleared by `/pace:complete`.
+
+### Model Override
+
+You can override the model used by specialist agents without changing the orchestrator's own model. Set the `model:` field in `.pace/settings.md`:
+
+```markdown
+# Settings
+_Persistent configuration for the PACE workflow. This file is not cleared by /pace:complete._
+
+## Model
+<!-- Valid values: sonnet, opus, haiku -->
+model: sonnet
+```
+
+**Accepted values**: `sonnet`, `opus`, `haiku`
+
+**Which commands read it**: Every command that spawns specialist agents — `/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:plan`, `/pace:roadmap`, `/pace:complete`, `/pace:scan`, and `/pace:agent`.
+
+**What it affects**: Only the specialist agents spawned by these commands. The orchestrator session model is unaffected — it continues to run on whatever model you started it with.
+
+**When no `settings.md` exists** (or the `model:` field is blank): Behaviour is unchanged. Specialist agents inherit the session model, exactly as they did before this feature existed.
 
 ## Repository Structure
 
