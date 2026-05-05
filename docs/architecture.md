@@ -93,6 +93,7 @@ flowchart LR
         registry["AGENT-REGISTRY.md\n(agent index)"]
         plan["PLAN.md\n(tasks + agents + dependencies)"]
         state["STATE.md\n(execution progress)"]
+        settings["settings.md\n(model override)"]
     end
 
     subgraph outputs["Codebase"]
@@ -103,11 +104,14 @@ flowchart LR
     user -->|"/pace:plan"| plan
     plan -->|approved| state
     project & registry & plan & state -->|context| orchestrator["Orchestrator"]
+    settings -->|model parameter| orchestrator
     orchestrator -->|tailored brief| specialists["Specialist Agents"]
     specialists -->|completion summary| documenter["pace-documenter"]
     specialists -->|implementation| code
     documenter -->|patch| project
 ```
+
+**Settings override**: The orchestrator reads `settings.md` at execution time and passes its `model` value to every specialist agent spawn. This controls which model specialists run on but never affects the orchestrator's own model, which always matches the session model.
 
 ## PROJECT.md Freshness
 
