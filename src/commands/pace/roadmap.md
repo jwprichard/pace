@@ -37,6 +37,13 @@ The remaining string after all flags are stripped is the user's topic prompt.
 
 ## Stage 1 — Pre-flight
 
+### Load settings
+
+Read `.pace/settings.md`. If the file exists, extract the value after `model:` on
+its own line. Trim whitespace. If the value is non-empty, set `model_override` to
+that value (e.g. `sonnet`, `opus`, `haiku`). If the file does not exist, or the
+`model:` line is absent, or its value is empty, set `model_override = null`.
+
 Run the following checks in order. Stop on the first failure unless otherwise noted.
 
 ### Check 1: Agent registry
@@ -79,7 +86,8 @@ If **Yes**: run the inline scan:
    `docker-compose.yml`, `.env.example`, `Makefile`
 3. Ensure `.pace/` exists: `mkdir -p .pace`
 4. Spawn `pace-codebase-analyst` as a Task with `dangerouslySkipPermissions: true`
-   and the collected data. Wait for completion.
+   and the collected data. If `model_override` is set, include `model: {model_override}`
+   in the Task call. Wait for completion.
 
 If **No**: stop. Tell the user to run `/pace:scan` first.
 
@@ -130,7 +138,8 @@ mkdir -p .pace/requirements/ .pace/drafts/
 If `research_mode` is `false`, skip this stage entirely and proceed to Stage 2.
 
 If `research_mode` is `true`, spawn a single Task with `dangerouslySkipPermissions: true`
-using the prompt below. The stripped topic string (after all flags are removed) is the
+using the prompt below. If `model_override` is set, include `model: {model_override}`
+in the Task call. The stripped topic string (after all flags are removed) is the
 research topic.
 
 ---
@@ -299,7 +308,8 @@ Tell the user which agents you are assembling and why.
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
 Spawn each selected domain agent as a parallel Task with the following prompt
-(substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`):
+(substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`).
+If `model_override` is set, include `model: {model_override}` in each Task call:
 
 ---
 You are acting as a **{agent_role}** planning expert.
@@ -366,7 +376,8 @@ Wait for all parallel Tasks to complete before proceeding to Stage 5.
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
 Once all draft files exist in `.pace/drafts/`, spawn the `pace-synthesiser`
-agent as a Task with the following prompt:
+agent as a Task with the following prompt. If `model_override` is set, include
+`model: {model_override}` in the Task call:
 
 ---
 Read all phase proposal files in `.pace/drafts/`.
