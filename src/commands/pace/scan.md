@@ -51,7 +51,23 @@ Then read the following files **if they exist** (use Bash to check, then read):
 mkdir -p .pace
 ```
 
+### Model override
+
+If `.pace/settings.md` exists, read it and look for a `model:` line in the `## Model`
+section. If the line has a non-empty value (e.g. `model: sonnet`), store that value
+as the **model override** for all specialist agent spawns during this command.
+
+If the file does not exist, the `model:` line is missing, or its value is blank
+(e.g. `model:` with nothing after it), no model override is used — agents will
+inherit the session model as normal.
+
+The orchestrator's own model is never changed by this setting.
+
 ## Step 3 — Spawn pace-codebase-analyst
+
+If a **model override** was read in Step 2, include `model: {model_value}` in
+the Task tool call. When no model override is set, omit the `model` parameter
+entirely so the agent inherits the session default.
 
 Spawn `pace-codebase-analyst` as a Task with the following prompt
 (substitute all `{...}` placeholders with the actual collected data):
