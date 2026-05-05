@@ -66,13 +66,37 @@ PACE creates a `.pace/` directory in your project root:
   AGENT-REGISTRY.md   # Tier 1 — division index
   PLAN.md              # Current plan with tasks and success criteria
   STATE.md             # Progress tracking across sessions
+  settings.md          # Persistent configuration — model override, etc. (not cleared by /pace:complete)
   agents/              # Tier 2 — per-division agent lists
     engineering.md
     design.md
     ...
 ```
 
-These files are generated — don't edit them by hand (except STATE.md if you need to manually mark a task).
+These files are generated — don't edit them by hand (except `STATE.md` if you need to manually mark a task, or `settings.md` which you create yourself).
+
+## Configuration
+
+PACE reads `.pace/settings.md` for persistent workflow configuration. This file is never cleared by `/pace:complete`, so your preferences carry across plans.
+
+### Model Override
+
+Run specialist agents on a cheaper or faster model to save tokens while keeping the orchestrator on your session model. Create `.pace/settings.md` with the following content:
+
+```markdown
+# Settings
+_Persistent configuration for the PACE workflow. This file is not cleared by /pace:complete._
+
+## Model
+<!-- Valid values: sonnet, opus, haiku -->
+model: sonnet
+```
+
+**Accepted values**: `sonnet`, `opus`, `haiku`
+
+When set, every command that spawns specialist agents (`/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:plan`, `/pace:roadmap`, `/pace:complete`, `/pace:scan`, `/pace:agent`) passes the configured model to each agent. The orchestrator session model is unaffected.
+
+When no `settings.md` exists or the `model:` field is blank, specialist agents inherit the session model as before.
 
 ## Key Principles
 
