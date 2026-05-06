@@ -47,6 +47,10 @@ on its own line. Trim whitespace. If the value is non-empty, set `model_override
 that value (e.g. `sonnet`, `opus`, `haiku`). If the file does not exist, or the
 `plan-model:` line is absent, or its value is empty, set `model_override = null`.
 
+> **How to pass the model override:** `model` is a top-level parameter on the Agent tool,
+> not text inside the prompt. Correct usage:
+> `Agent(description: "...", prompt: "...", model: "{model_override}")`
+
 Run the following checks in order. Stop on the first failure unless otherwise noted.
 
 ### Check 1: Agent registry
@@ -89,7 +93,7 @@ If **Yes**: run the inline scan:
    `docker-compose.yml`, `.env.example`, `Makefile`
 3. Ensure `.pace/` exists: `mkdir -p .pace`
 4. Spawn `pace-codebase-analyst` using the Agent tool with `dangerouslySkipPermissions: true`
-   and the collected data. If `model_override` is set, include `model: {model_override}`
+   and the collected data. If `model_override` is set, set the `model` parameter to `{model_override}`
    in the Agent tool call. Wait for completion.
 
 If **No**: stop. Tell the user to run `/pace:scan` first.
@@ -174,7 +178,7 @@ mkdir -p .pace/requirements/ .pace/drafts/
 If `research_mode` is `false`, skip this stage entirely and proceed to Stage 2.
 
 If `research_mode` is `true`, spawn a single Agent tool call with `dangerouslySkipPermissions: true`
-using the prompt below. If `model_override` is set, include `model: {model_override}`
+using the prompt below. If `model_override` is set, set the `model` parameter to `{model_override}`
 in the Agent tool call. The stripped topic string (after all flags are removed) is the
 research topic.
 
@@ -375,7 +379,7 @@ Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
 Spawn each selected domain agent as a parallel Agent tool call with the following prompt
 (substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`).
-If `model_override` is set, include `model: {model_override}` in each Agent tool call:
+If `model_override` is set, set the `model` parameter to `{model_override}` on each Agent tool call:
 
 ---
 You are acting as a **{agent_role}** planning expert.
@@ -457,7 +461,7 @@ Mark dependencies accurately — independent tasks will be run in parallel.
 If `tdd_mode` is `true`, spawn the selected testing peer agent (chosen in
 Stage 3) as an additional parallel Agent tool call alongside the domain planners above,
 using the prompt below (substitute `{testing_agent_role}`).
-If `model_override` is set, include `model: {model_override}` in the Agent tool call.
+If `model_override` is set, set the `model` parameter to `{model_override}` on the Agent tool call.
 This agent runs in parallel with the domain planner agents — do not wait for
 the domain planners to finish before spawning it.
 

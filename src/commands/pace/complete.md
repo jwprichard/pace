@@ -49,6 +49,10 @@ agents will inherit the session model as normal.
 
 The orchestrator's own model is never changed by this setting.
 
+> **How to pass the model override:** `model` is a top-level parameter on the Agent tool,
+> not text inside the prompt. Correct usage:
+> `Agent(description: "...", prompt: "...", model: "{model_value}")`
+
 ### Phase detection
 
 If `.pace/PLAN.md` exists, read the header lines and look for a `_Phase: {N}_` marker.
@@ -67,7 +71,7 @@ If `.pace/memory/episode.md` does not exist, skip this step.
 Read `.pace/memory/episode.md`.
 Read `.pace/memory/semantic.md` if it exists (may be absent on first completion).
 
-If a **model override** was read in Step 1, include `model: {model_value}` in
+If a **model override** was read in Step 1, set the `model` parameter to `{model_value}` on
 the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 
@@ -121,7 +125,7 @@ Wait for the task to complete.
 
 ## Step 3 — Refresh PROJECT.md
 
-If a **model override** was read in Step 1, include `model: {model_value}` in
+If a **model override** was read in Step 1, set the `model` parameter to `{model_value}` on
 the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 

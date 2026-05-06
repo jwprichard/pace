@@ -48,9 +48,13 @@ agents will inherit the session model as normal.
 
 The orchestrator's own model is never changed by this setting.
 
+> **How to pass the model override:** `model` is a top-level parameter on the Agent tool,
+> not text inside the prompt. Correct usage:
+> `Agent(description: "...", prompt: "...", model: "{model_value}")`
+
 ## Step 2 — Spawn verification specialist
 
-If a **model override** was read in Step 1, include `model: {model_value}` in
+If a **model override** was read in Step 1, set the `model` parameter to `{model_value}` on
 the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 
@@ -113,7 +117,7 @@ Read `.pace/VERIFICATION.md`. For each failing task:
 - Note the agent, files, allowed tools, and the specific failing criteria
 
 Spawn each failing task's agent as a **parallel Agent tool call** with `dangerouslySkipPermissions: true`.
-If a **model override** was read in Step 1, include `model: {model_value}` in
+If a **model override** was read in Step 1, set the `model` parameter to `{model_value}` on
 each Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default.
 

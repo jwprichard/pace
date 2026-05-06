@@ -56,7 +56,11 @@ Read `.pace/settings.md`. Look for a line matching `execute-model: <value>` (e.g
 - If the file does not exist, or the `execute-model:` line is empty / missing a value after the colon, set `model_override` to **empty** (no override).
 - If a non-empty value is present (e.g. `sonnet`, `opus`, `haiku`), store it as `model_override`.
 
-This value is used in Steps 5 and 6 when spawning Tasks.
+This value is used in Steps 5 and 6 when spawning agents.
+
+> **How to pass the model override:** `model` is a top-level parameter on the Agent tool,
+> not text inside the prompt. Correct usage:
+> `Agent(description: "...", prompt: "...", model: "{model_override}")`
 
 ## Step 4 — Find relevant files
 
@@ -73,7 +77,7 @@ Collect up to 10 most relevant file paths and their matching lines.
 Spawn the named agent using the Agent tool with the following prompt
 (substitute all `{...}` placeholders).
 
-**If `model_override` is set**, include `model: {model_override}` in the Agent tool call.
+**If `model_override` is set**, set the `model` parameter to `{model_override}` on the Agent tool call.
 
 ---
 You are executing a one-shot task as @{agent name}.
@@ -105,7 +109,7 @@ Wait for the task to complete.
 After the specialist completes, spawn `pace-documentation-specialist` using the Agent tool
 in patch mode.
 
-**If `model_override` is set**, include `model: {model_override}` in the Agent tool call.
+**If `model_override` is set**, set the `model` parameter to `{model_override}` on the Agent tool call.
 
 ---
 Patch mode. Task just completed.

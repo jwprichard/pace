@@ -69,6 +69,10 @@ agents will inherit the session model as normal.
 
 The orchestrator's own model is never changed by this setting.
 
+> **How to pass the model override:** `model` is a top-level parameter on the Agent tool,
+> not text inside the prompt. Correct usage:
+> `Agent(description: "...", prompt: "...", model: "{model_value}")`
+
 ## Stage 2 — Load Tasks and Build Waves
 
 Parse all tasks from the `## Tasks` section of STATE.md:
@@ -133,7 +137,7 @@ to prepend as codebase context in each agent's prompt.
 Spawn all tasks in the wave as **simultaneous parallel Agent tool calls** using this
 prompt for each (substitute all `{...}` placeholders).
 
-If a **model override** was read in Stage 1, include `model: {model_value}` in
+If a **model override** was read in Stage 1, set the `model` parameter to `{model_value}` on
 every Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default:
 
@@ -256,7 +260,7 @@ _Completed: {ISO timestamp}_
 ```
 
 Then spawn `pace-documentation-specialist` using the Agent tool in patch mode.
-If a **model override** was read in Stage 1, include `model: {model_value}` in
+If a **model override** was read in Stage 1, set the `model` parameter to `{model_value}` on
 this Agent tool call. When no model override is set, omit the `model` parameter
 entirely:
 
