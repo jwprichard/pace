@@ -3,7 +3,7 @@ name: pace:verify
 description: Checks completed work against PLAN.md success criteria using the pace-verification-specialist
 allowed-tools:
   - Read
-  - Task
+  - Agent
   - AskUserQuestion
 ---
 
@@ -16,7 +16,7 @@ You do not verify anything yourself — the specialist does that.
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 
 ## Step 1 — Pre-flight
 
@@ -51,10 +51,10 @@ The orchestrator's own model is never changed by this setting.
 ## Step 2 — Spawn verification specialist
 
 If a **model override** was read in Step 1, include `model: {model_value}` in
-the Task tool call. When no model override is set, omit the `model` parameter
+the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 
-Spawn `pace-verification-specialist` as a Task with the following prompt:
+Spawn `pace-verification-specialist` using the Agent tool with the following prompt:
 
 ---
 Read `.pace/PLAN.md` and verify all completed tasks against their success criteria.
@@ -112,9 +112,9 @@ Run /pace:verify again when you're ready to re-check.
 Read `.pace/VERIFICATION.md`. For each failing task:
 - Note the agent, files, allowed tools, and the specific failing criteria
 
-Spawn each failing task's agent as a **parallel Task** with `dangerouslySkipPermissions: true`.
+Spawn each failing task's agent as a **parallel Agent tool call** with `dangerouslySkipPermissions: true`.
 If a **model override** was read in Step 1, include `model: {model_value}` in
-each Task tool call. When no model override is set, omit the `model` parameter
+each Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default.
 
 Use this prompt:
@@ -152,7 +152,7 @@ Wait for all fix agents to complete.
 ## Step 5 — Re-verify
 
 Spawn `pace-verification-specialist` again (same prompt as Step 2, including
-`model: {model_value}` in the Task call when the model override is set).
+`model: {model_value}` in the Agent tool call when the model override is set).
 
 Wait for it to complete, then return to **Step 3** to present the new verdict.
 

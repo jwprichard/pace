@@ -7,7 +7,7 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
 ---
 
 <objective>
@@ -19,7 +19,7 @@ After the specialist completes, patch PROJECT.md to reflect any changes.
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 
 ## Step 1 — Parse the argument
 
@@ -70,10 +70,10 @@ Collect up to 10 most relevant file paths and their matching lines.
 
 ## Step 5 — Spawn the specialist
 
-Spawn the named agent as a Task with the following prompt
+Spawn the named agent using the Agent tool with the following prompt
 (substitute all `{...}` placeholders).
 
-**If `model_override` is set**, include `model: {model_override}` in the Task call.
+**If `model_override` is set**, include `model: {model_override}` in the Agent tool call.
 
 ---
 You are executing a one-shot task as @{agent name}.
@@ -102,10 +102,10 @@ Wait for the task to complete.
 
 ## Step 6 — Update documentation
 
-After the specialist completes, spawn `pace-documentation-specialist` as a Task
+After the specialist completes, spawn `pace-documentation-specialist` using the Agent tool
 in patch mode.
 
-**If `model_override` is set**, include `model: {model_override}` in the Task call.
+**If `model_override` is set**, include `model: {model_override}` in the Agent tool call.
 
 ---
 Patch mode. Task just completed.

@@ -7,7 +7,7 @@ allowed-tools:
   - Write
   - Bash
   - Glob
-  - Task
+  - Agent
   - AskUserQuestion
 ---
 
@@ -22,7 +22,7 @@ team and synthesise their output.
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 > This applies to all agent spawns without exception — planners, synthesiser, and any others.
 
 ## Stage 0 — Parse Flags
@@ -88,9 +88,9 @@ If **Yes**: run the inline scan:
    `Gemfile`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `tsconfig.json`,
    `docker-compose.yml`, `.env.example`, `Makefile`
 3. Ensure `.pace/` exists: `mkdir -p .pace`
-4. Spawn `pace-codebase-analyst` as a Task with `dangerouslySkipPermissions: true`
+4. Spawn `pace-codebase-analyst` using the Agent tool with `dangerouslySkipPermissions: true`
    and the collected data. If `model_override` is set, include `model: {model_override}`
-   in the Task call. Wait for completion.
+   in the Agent tool call. Wait for completion.
 
 If **No**: stop. Tell the user to run `/pace:scan` first.
 
@@ -173,9 +173,9 @@ mkdir -p .pace/requirements/ .pace/drafts/
 
 If `research_mode` is `false`, skip this stage entirely and proceed to Stage 2.
 
-If `research_mode` is `true`, spawn a single Task with `dangerouslySkipPermissions: true`
+If `research_mode` is `true`, spawn a single Agent tool call with `dangerouslySkipPermissions: true`
 using the prompt below. If `model_override` is set, include `model: {model_override}`
-in the Task call. The stripped topic string (after all flags are removed) is the
+in the Agent tool call. The stripped topic string (after all flags are removed) is the
 research topic.
 
 ---
@@ -217,7 +217,7 @@ Infer the research subject from this text.)
 Allowed tools: WebSearch, WebFetch, Write
 ---
 
-Wait for the Task to complete. Once it finishes, display the bullet-point summary it
+Wait for the agent to complete. Once it finishes, display the bullet-point summary it
 returned to the user before proceeding to Stage 2. Do not write the summary to any file —
 `.pace/requirements/research.md` is the single canonical output artifact; the summary is
 shown inline only.
@@ -373,9 +373,9 @@ explicitly name the testing peer and explain which preference criterion matched.
 
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
-Spawn each selected domain agent as a parallel Task with the following prompt
+Spawn each selected domain agent as a parallel Agent tool call with the following prompt
 (substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`).
-If `model_override` is set, include `model: {model_override}` in each Task call:
+If `model_override` is set, include `model: {model_override}` in each Agent tool call:
 
 ---
 You are acting as a **{agent_role}** planning expert.
@@ -455,10 +455,10 @@ Mark dependencies accurately — independent tasks will be run in parallel.
 
 **TDD mode — testing peer planner:**
 If `tdd_mode` is `true`, spawn the selected testing peer agent (chosen in
-Stage 3) as an additional parallel Task alongside the domain planners above,
+Stage 3) as an additional parallel Agent tool call alongside the domain planners above,
 using the prompt below (substitute `{testing_agent_role}`).
-If `model_override` is set, include `model: {model_override}` in the Task call.
-This Task runs in parallel with the domain planner Tasks — do not wait for
+If `model_override` is set, include `model: {model_override}` in the Agent tool call.
+This agent runs in parallel with the domain planner agents — do not wait for
 the domain planners to finish before spawning it.
 
 ---
@@ -543,7 +543,7 @@ Rules you must follow:
 If `tdd_mode` is `false`, do not spawn the testing peer planner. Stage 4
 spawns only the domain planners described above — no change.
 
-Wait for all parallel Tasks (domain planners and, when applicable, the testing
+Wait for all parallel Agent tool calls (domain planners and, when applicable, the testing
 peer planner) to complete before proceeding to Stage 5.
 
 ## Stage 5 — Synthesis
@@ -551,8 +551,8 @@ peer planner) to complete before proceeding to Stage 5.
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
 Once all draft files exist in `.pace/drafts/`, spawn the `pace-synthesiser`
-agent as a Task with the following prompt. If `model_override` is set, include
-`model: {model_override}` in the Task call:
+agent using the Agent tool with the following prompt. If `model_override` is set, include
+`model: {model_override}` in the Agent tool call:
 
 ---
 Read all draft plan files in `.pace/drafts/`.
@@ -721,7 +721,7 @@ deleted when `/pace:complete` runs. They are plan-scoped, not persistent.
 **Standard Specialist Toolkit:** The default tool set for all specialist agents is:
 `Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch`.
 Planners should omit `Allowed tools:` from tasks unless they have a specific reason
-to restrict below this default. `Task`, `TaskCreate`, `TaskUpdate`, and `AskUserQuestion`
+to restrict below this default. `Agent`, `TaskCreate`, `TaskUpdate`, and `AskUserQuestion`
 are orchestrator-only tools and are never granted to specialist agents.
 
 **Memory layers:** PACE maintains two memory layers in `.pace/memory/`:

@@ -9,7 +9,7 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - AskUserQuestion
 ---
 
@@ -26,12 +26,12 @@ with full plan context, patch PROJECT.md, done. No plan modification, no
 state tracking.
 
 You are an orchestrator. You do not implement, code, write, or design anything
-yourself. Every fix goes to a specialist agent via the Task tool.
+yourself. Every fix goes to a specialist agent via the Agent tool.
 </objective>
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 
 ## Stage 0 — Parse Flags
 
@@ -110,11 +110,11 @@ file paths and their matching lines.
 
 ### L6 — Dispatch
 
-Spawn the selected agent as a Task with `dangerouslySkipPermissions: true`
+Spawn the selected agent using the Agent tool with `dangerouslySkipPermissions: true`
 and this prompt (substitute all `{...}` placeholders).
 
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-the Task tool call. When no model override is set, omit the `model` parameter
+the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default:
 
 ---
@@ -155,9 +155,9 @@ Wait for the task to complete.
 
 ### L7 — Patch documentation
 
-Spawn `pace-documentation-specialist` as a Task in patch mode.
+Spawn `pace-documentation-specialist` using the Agent tool in patch mode.
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-this Task tool call. When no model override is set, omit the `model` parameter
+this Agent tool call. When no model override is set, omit the `model` parameter
 entirely:
 
 ---
@@ -304,11 +304,11 @@ Dispatching now...
 
 ### Stage 6 — Dispatch fix agents
 
-For each fix task, spawn the assigned agent as a parallel Task with
+For each fix task, spawn the assigned agent as a parallel Agent tool call with
 `dangerouslySkipPermissions: true` and this prompt (substitute all placeholders).
 
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-every Task tool call. When no model override is set, omit the `model` parameter
+every Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default:
 
 ---
@@ -368,9 +368,9 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Spawn `pace-documentation-specialist` as a fire-and-forget Task in patch mode.
+Spawn `pace-documentation-specialist` as a fire-and-forget Agent tool call in patch mode.
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-this Task tool call. When no model override is set, omit the `model` parameter
+this Agent tool call. When no model override is set, omit the `model` parameter
 entirely:
 
 ```

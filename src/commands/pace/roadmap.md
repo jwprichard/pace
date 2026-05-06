@@ -7,7 +7,7 @@ allowed-tools:
   - Write
   - Bash
   - Glob
-  - Task
+  - Agent
   - AskUserQuestion
 ---
 
@@ -22,7 +22,7 @@ team and synthesise their output.
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 > This applies to all agent spawns without exception.
 
 ## Stage 0 — Parse Flags
@@ -85,9 +85,9 @@ If **Yes**: run the inline scan:
    `Gemfile`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `tsconfig.json`,
    `docker-compose.yml`, `.env.example`, `Makefile`
 3. Ensure `.pace/` exists: `mkdir -p .pace`
-4. Spawn `pace-codebase-analyst` as a Task with `dangerouslySkipPermissions: true`
+4. Spawn `pace-codebase-analyst` using the Agent tool with `dangerouslySkipPermissions: true`
    and the collected data. If `model_override` is set, include `model: {model_override}`
-   in the Task call. Wait for completion.
+   in the Agent tool call. Wait for completion.
 
 If **No**: stop. Tell the user to run `/pace:scan` first.
 
@@ -137,9 +137,9 @@ mkdir -p .pace/requirements/ .pace/drafts/
 
 If `research_mode` is `false`, skip this stage entirely and proceed to Stage 2.
 
-If `research_mode` is `true`, spawn a single Task with `dangerouslySkipPermissions: true`
+If `research_mode` is `true`, spawn a single Agent tool call with `dangerouslySkipPermissions: true`
 using the prompt below. If `model_override` is set, include `model: {model_override}`
-in the Task call. The stripped topic string (after all flags are removed) is the
+in the Agent tool call. The stripped topic string (after all flags are removed) is the
 research topic.
 
 ---
@@ -181,7 +181,7 @@ Infer the research subject from this text.)
 Allowed tools: WebSearch, WebFetch, Write
 ---
 
-Wait for the Task to complete. Display the bullet-point summary to the user before
+Wait for the agent to complete. Display the bullet-point summary to the user before
 proceeding to Stage 2.
 
 ## Stage 2 — Interview
@@ -307,9 +307,9 @@ Tell the user which agents you are assembling and why.
 
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
-Spawn each selected domain agent as a parallel Task with the following prompt
+Spawn each selected domain agent as a parallel Agent tool call with the following prompt
 (substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`).
-If `model_override` is set, include `model: {model_override}` in each Task call:
+If `model_override` is set, include `model: {model_override}` in each Agent tool call:
 
 ---
 You are acting as a **{agent_role}** planning expert.
@@ -369,15 +369,15 @@ Guidelines:
   Keep phases at the objective/deliverable level.
 ---
 
-Wait for all parallel Tasks to complete before proceeding to Stage 5.
+Wait for all parallel Agent tool calls to complete before proceeding to Stage 5.
 
 ## Stage 5 — Synthesis
 
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
 Once all draft files exist in `.pace/drafts/`, spawn the `pace-synthesiser`
-agent as a Task with the following prompt. If `model_override` is set, include
-`model: {model_override}` in the Task call:
+agent using the Agent tool with the following prompt. If `model_override` is set, include
+`model: {model_override}` in the Agent tool call:
 
 ---
 Read all phase proposal files in `.pace/drafts/`.

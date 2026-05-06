@@ -5,7 +5,7 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-  - Task
+  - Agent
   - TaskCreate
   - TaskUpdate
 ---
@@ -19,12 +19,12 @@ Mirror all task state into Claude's native task system so progress is visible
 in the UI throughout execution.
 
 You are an orchestrator. You do not implement, code, write, or design anything yourself.
-Every task goes to a specialist agent via the Task tool.
+Every task goes to a specialist agent via the Agent tool.
 </objective>
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 > This applies to all specialist agents and all documentation-specialist patch calls.
 
 ## Stage 1 — Pre-flight
@@ -130,11 +130,11 @@ For each task in the wave, build its context from PLAN.md:
 If `.pace/PROJECT.md` exists, read the `## Stack` and `## Structure` sections
 to prepend as codebase context in each agent's prompt.
 
-Spawn all tasks in the wave as **simultaneous parallel Task calls** using this
+Spawn all tasks in the wave as **simultaneous parallel Agent tool calls** using this
 prompt for each (substitute all `{...}` placeholders).
 
 If a **model override** was read in Stage 1, include `model: {model_value}` in
-every Task tool call. When no model override is set, omit the `model` parameter
+every Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default:
 
 ---
@@ -255,9 +255,9 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Then spawn `pace-documentation-specialist` as a Task in patch mode.
+Then spawn `pace-documentation-specialist` using the Agent tool in patch mode.
 If a **model override** was read in Stage 1, include `model: {model_value}` in
-this Task tool call. When no model override is set, omit the `model` parameter
+this Agent tool call. When no model override is set, omit the `model` parameter
 entirely:
 
 ```
@@ -269,7 +269,7 @@ Summary: {completion summary returned by the specialist}
 Update .pace/PROJECT.md to reflect any changes introduced by this task.
 ```
 
-(Spawn this as a fire-and-forget parallel Task — do not wait for it before
+(Spawn this as a fire-and-forget parallel Agent tool call — do not wait for it before
 processing the next task in the wave outcome loop. If PROJECT.md does not
 exist, the specialist will skip silently.)
 

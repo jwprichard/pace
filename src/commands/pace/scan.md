@@ -3,7 +3,7 @@ name: pace:scan
 description: Scans the codebase and produces .pace/PROJECT.md for use by planning and execution agents
 allowed-tools:
   - Bash
-  - Task
+  - Agent
 ---
 
 <objective>
@@ -15,7 +15,7 @@ You collect facts. The analyst interprets them.
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 
 ## Step 1 — Collect raw data
 
@@ -67,10 +67,10 @@ The orchestrator's own model is never changed by this setting.
 ## Step 3 — Spawn pace-codebase-analyst
 
 If a **model override** was read in Step 2, include `model: {model_value}` in
-the Task tool call. When no model override is set, omit the `model` parameter
+the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 
-Spawn `pace-codebase-analyst` as a Task with the following prompt
+Spawn `pace-codebase-analyst` using the Agent tool with the following prompt
 (substitute all `{...}` placeholders with the actual collected data):
 
 ---

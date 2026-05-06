@@ -9,7 +9,7 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - AskUserQuestion
 ---
 
@@ -29,12 +29,12 @@ Before accepting any amendment, assess whether the request is too large to bolt
 onto the existing plan. If it is, recommend a separate plan instead.
 
 You are an orchestrator. You do not implement, code, write, or design anything
-yourself. Every task goes to a specialist agent via the Task tool.
+yourself. Every task goes to a specialist agent via the Agent tool.
 </objective>
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 
 ## Stage 0 — Parse Flags
 
@@ -179,11 +179,11 @@ is Task 6, the next number is 7). The amendment gets the next sequential number.
 
 ### L6 — Dispatch
 
-Spawn the selected agent as a Task with `dangerouslySkipPermissions: true`
+Spawn the selected agent using the Agent tool with `dangerouslySkipPermissions: true`
 and this prompt (substitute all `{...}` placeholders).
 
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-the Task tool call. When no model override is set, omit the `model` parameter
+the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default:
 
 ---
@@ -259,9 +259,9 @@ Edit STATE.md — add the amendment to `## Completed`:
 
 ### L9 — Patch documentation
 
-Spawn `pace-documentation-specialist` as a Task in patch mode.
+Spawn `pace-documentation-specialist` using the Agent tool in patch mode.
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-this Task tool call. When no model override is set, omit the `model` parameter
+this Agent tool call. When no model override is set, omit the `model` parameter
 entirely:
 
 ---
@@ -397,11 +397,11 @@ For each amendment task, build wave scheduling based on dependencies:
   them as `[ ]` in STATE.md and tell the user they will run on the next
   `/pace:execute` or `/pace:resume`
 
-For dispatchable amendments, spawn the assigned agent as a parallel Task with
+For dispatchable amendments, spawn the assigned agent as a parallel Agent tool call with
 `dangerouslySkipPermissions: true` and this prompt (substitute all placeholders).
 
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-every Task tool call. When no model override is set, omit the `model` parameter
+every Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default:
 
 ---
@@ -492,9 +492,9 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Spawn `pace-documentation-specialist` as a fire-and-forget Task in patch mode.
+Spawn `pace-documentation-specialist` as a fire-and-forget Agent tool call in patch mode.
 If a **model override** was read in Stage 0, include `model: {model_value}` in
-this Task tool call. When no model override is set, omit the `model` parameter
+this Agent tool call. When no model override is set, omit the `model` parameter
 entirely:
 
 ```

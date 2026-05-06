@@ -6,7 +6,7 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-  - Task
+  - Agent
 ---
 
 <objective>
@@ -20,7 +20,7 @@ Delete only the plan-specific runtime files.
 
 <process>
 
-> **Task spawning rule:** Every `Task` spawned in this command must use `dangerouslySkipPermissions: true`.
+> **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
 
 ## Step 1 — Pre-flight
 
@@ -68,10 +68,10 @@ Read `.pace/memory/episode.md`.
 Read `.pace/memory/semantic.md` if it exists (may be absent on first completion).
 
 If a **model override** was read in Step 1, include `model: {model_value}` in
-the Task tool call. When no model override is set, omit the `model` parameter
+the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 
-Spawn a Task with `dangerouslySkipPermissions: true` and this prompt:
+Spawn an agent using the Agent tool with `dangerouslySkipPermissions: true` and this prompt:
 
 ---
 You are synthesising episodic memory into long-term semantic memory for a PACE project.
@@ -122,10 +122,10 @@ Wait for the task to complete.
 ## Step 3 — Refresh PROJECT.md
 
 If a **model override** was read in Step 1, include `model: {model_value}` in
-the Task tool call. When no model override is set, omit the `model` parameter
+the Agent tool call. When no model override is set, omit the `model` parameter
 entirely so the agent inherits the session default.
 
-Spawn `pace-documentation-specialist` as a Task in full mode:
+Spawn `pace-documentation-specialist` using the Agent tool in full mode:
 
 ---
 Full mode. The current plan has just completed.
