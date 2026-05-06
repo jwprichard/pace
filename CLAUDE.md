@@ -23,6 +23,7 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent |
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria |
 | `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — `--light` for quick one-shot fixes |
+| `/pace:amend` | Adds new tasks to the current plan mid-execution — `--light` for quick one-shot additions |
 | `/pace:resume` | Reads `STATE.md`, picks up from the last incomplete task |
 | `/pace:create-pr` | Creates a PR summarising what was requested, delivered, and verified |
 | `/pace:settings` | View and manage PACE settings (model overrides, etc.) |
@@ -89,7 +90,7 @@ execute-model: sonnet
 
 **Which commands read which setting:**
 - **`plan-model`**: `/pace:plan`, `/pace:roadmap`, `/pace:scan`
-- **`execute-model`**: `/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:complete`, `/pace:agent`
+- **`execute-model`**: `/pace:execute`, `/pace:fix`, `/pace:amend`, `/pace:verify`, `/pace:complete`, `/pace:agent`
 
 **What it affects**: Only the specialist agents spawned by these commands. The orchestrator session model is unaffected — it continues to run on whatever model you started it with.
 
@@ -114,6 +115,7 @@ pace/
         execute.md
         verify.md
         fix.md
+        amend.md
         resume.md
         create-pr.md
         complete.md

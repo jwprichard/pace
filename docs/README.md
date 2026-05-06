@@ -44,6 +44,7 @@ PACE doesn't ship its own agents — it discovers whatever agents you have insta
 | `/pace:execute` | Reads PLAN.md, delegates each task to a specialist agent |
 | `/pace:verify` | Checks completed work against plan success criteria |
 | `/pace:fix` | Dispatches targeted fixes — structured by default, `--light` for quick one-shot |
+| `/pace:amend` | Adds new tasks mid-execution — structured by default, `--light` for quick additions |
 | `/pace:resume` | Picks up from the last incomplete task |
 | `/pace:complete` | Reconciles branch state, finalises PR |
 
@@ -99,7 +100,7 @@ execute-model: sonnet
 
 **Which commands read which setting:**
 - **`plan-model`**: `/pace:plan`, `/pace:roadmap`, `/pace:scan`
-- **`execute-model`**: `/pace:execute`, `/pace:fix`, `/pace:verify`, `/pace:complete`, `/pace:agent`
+- **`execute-model`**: `/pace:execute`, `/pace:fix`, `/pace:amend`, `/pace:verify`, `/pace:complete`, `/pace:agent`
 
 The orchestrator session model is unaffected. When a field is blank or `settings.md` does not exist, agents inherit the session model as before.
 

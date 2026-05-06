@@ -10,6 +10,7 @@ flowchart TD
     agent["/pace:agent"]
     verify["/pace:verify"]
     fix["/pace:fix"]
+    amend["/pace:amend"]
     complete["/pace:complete"]
     resume["/pace:resume"]
 
@@ -19,11 +20,14 @@ flowchart TD
     verify -->|work confirmed| complete
     verify -->|needs work| fix
     fix -->|fixes applied| verify
+    execute -->|extra scope needed| amend
+    amend -->|amendments applied| execute
     execute -->|task blocked| resume
     resume --> execute
 
     agent -.->|one-shot shortcut| complete
     fix -.->|"--light (no state tracking)"| complete
+    amend -.->|"--light (minimal tracking)"| verify
 ```
 
 ## Agent Roster
@@ -111,7 +115,7 @@ flowchart LR
     documenter -->|patch| project
 ```
 
-**Settings override**: The orchestrator reads `settings.md` at command time and passes the appropriate model parameter to specialist agent spawns. Planning commands (`/pace:plan`, `/pace:roadmap`, `/pace:scan`) read `plan-model`. Execution commands (`/pace:execute`, `/pace:verify`, `/pace:fix`, `/pace:complete`, `/pace:agent`) read `execute-model`. This allows planning agents to run on a stronger model for architectural reasoning while execution agents run on a faster, cheaper model for bounded work. The orchestrator's own model always matches the session model.
+**Settings override**: The orchestrator reads `settings.md` at command time and passes the appropriate model parameter to specialist agent spawns. Planning commands (`/pace:plan`, `/pace:roadmap`, `/pace:scan`) read `plan-model`. Execution commands (`/pace:execute`, `/pace:verify`, `/pace:fix`, `/pace:amend`, `/pace:complete`, `/pace:agent`) read `execute-model`. This allows planning agents to run on a stronger model for architectural reasoning while execution agents run on a faster, cheaper model for bounded work. The orchestrator's own model always matches the session model.
 
 ## PROJECT.md Freshness
 

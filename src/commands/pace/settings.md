@@ -73,7 +73,7 @@ Effect descriptions:
 
 Include a brief explanation of which agents fall into each category:
 - **plan-model** affects: domain planners, synthesiser, research agents, codebase analyst
-- **execute-model** affects: specialist implementers, verification, fix agents, documentation patches
+- **execute-model** affects: specialist implementers, verification, fix agents, amendment agents, documentation patches
 
 ### 2c — Ask what to change
 
@@ -86,7 +86,7 @@ options:
   - label: "plan-model"
     description: "Model for planning agents (planners, synthesiser, research, codebase analyst)"
   - label: "execute-model"
-    description: "Model for execution agents (specialists, verification, fixes, documentation)"
+    description: "Model for execution agents (specialists, verification, fixes, amendments, documentation)"
   - label: "Done"
     description: "No changes needed."
 ```
