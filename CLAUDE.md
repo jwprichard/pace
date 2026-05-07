@@ -17,28 +17,30 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 
 | Command | What it does |
 |---|---|
-| `/pace:sync-agents` | Scans installed agents, writes the two-tier agent registry |
-| `/pace:roadmap` | Decomposes a large feature into ordered phases, produces `ROADMAP.md` |
-| `/pace:plan` | Interviews user, produces `PLAN.md` with atomic tasks and agent hints |
-| `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent |
-| `/pace:verify` | Checks completed work against `PLAN.md` success criteria |
-| `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — `--light` for quick one-shot fixes |
-| `/pace:amend` | Adds new tasks to the current plan mid-execution — `--light` for quick one-shot additions |
-| `/pace:status` | Shows plan progress and suggested next steps — read-only |
-| `/pace:resume` | Reads `STATE.md`, picks up from the last incomplete task |
-| `/pace:create-pr` | Creates a PR summarising what was requested, delivered, and verified |
-| `/pace:settings` | View and manage PACE settings (model overrides, etc.) |
-| `/pace:usage` | Displays token usage breakdown for the current plan |
-| `/pace:complete` | Reconciles branch state, finalises PR |
+| `/pace:sync-agents` | Scan installed agents and build the PACE agent registry |
+| `/pace:roadmap` | Interview the user, decompose a large feature into phases, and produce `ROADMAP.md` |
+| `/pace:plan` | Interview the user, assemble a domain planning team, and produce `PLAN.md` |
+| `/pace:scan` | Scans the codebase and produces `.pace/PROJECT.md` for use by planning and execution agents |
+| `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent, and tracks progress in `STATE.md` |
+| `/pace:verify` | Checks completed work against `PLAN.md` success criteria using the pace-verification-specialist |
+| `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — structured by default, `--light` for quick one-shot fixes |
+| `/pace:amend` | Adds new tasks to the current plan mid-execution — structured by default, `--light` for quick one-shot additions |
+| `/pace:agent` | Dispatches a specialist agent with baked-in codebase context — no blind exploration needed |
+| `/pace:status` | Shows the current plan status, progress, and suggested next steps — read-only, no work is executed |
+| `/pace:resume` | Picks up execution from the last incomplete task in `STATE.md` |
+| `/pace:create-pr` | Creates a PR from the PACE workflow — summarising what was requested, what was delivered, and what was verified |
+| `/pace:settings` | View and manage PACE workflow settings |
+| `/pace:usage` | Display token usage and cost breakdown for the current plan — grand total, per-phase subtotals, and per-task detail rows |
+| `/pace:complete` | Closes out a completed plan — full `PROJECT.md` refresh and `.pace/` runtime cleanup |
 
 ## Agents
 
 | Agent | Role |
 |---|---|
-| `pace-synthesiser` | Merges parallel draft plans into a single `PLAN.md` |
-| `pace-codebase-analyst` | Analyses raw codebase data and writes `PROJECT.md` — detects monorepo services when present |
-| `pace-documentation-specialist` | Patches or rewrites `PROJECT.md` after tasks complete |
-| `pace-verification-specialist` | Checks completed work against success criteria |
+| `pace-synthesiser` | Reads domain expert draft plans and synthesises them into a single coherent `PLAN.md` |
+| `pace-codebase-analyst` | Interprets raw codebase scan output and writes a structured `PROJECT.md` capturing stack, structure, conventions, and entry points |
+| `pace-documentation-specialist` | Maintains `.pace/PROJECT.md` as a living codebase map — patches it after tasks complete and rewrites it fully on plan close |
+| `pace-verification-specialist` | Verifies completed work against `PLAN.md` success criteria using evidence-based checks — files, greps, and bash commands |
 
 ## Agent Registry
 
@@ -115,16 +117,18 @@ pace/
         sync-agents.md
         roadmap.md
         plan.md
+        scan.md
         execute.md
         verify.md
         fix.md
         amend.md
-        resume.md
+        agent.md
         status.md
+        resume.md
         create-pr.md
-        complete.md
         settings.md
         usage.md
+        complete.md
     lib/
       token-usage.py
       find-session.sh
