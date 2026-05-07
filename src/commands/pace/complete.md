@@ -36,6 +36,24 @@ Finish execution first, then run /pace:complete.
 Run /pace:execute to continue, or /pace:resume to pick up from where you left off.
 ```
 
+### Session UUID
+
+Scan STATE.md for a line matching `_Session: {uuid}_` (italicised metadata line written
+by `/pace:plan`). Extract the UUID value and store it as `session_uuid`.
+
+Also derive the encoded project path used by Claude Code's session store. Run:
+```bash
+pwd | sed 's|/|-|g' | sed 's|^-||'
+```
+Store the result as `encoded_project_path`.
+
+If the `_Session:` line is absent, log a warning and set `session_uuid = null`:
+```
+Warning: No session UUID found in STATE.md. Token usage for this phase will not be recorded.
+```
+
+Make all usage recording in this command conditional on `session_uuid` being non-null.
+
 ### Model override
 
 If `.pace/settings.md` exists, read it and look for an `execute-model:` line in the
@@ -123,6 +141,12 @@ Allowed tools: Read, Write
 
 Wait for the task to complete.
 
+If `session_uuid` is non-null, record the semantic memory agent's usage:
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
+  bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser
+```
+
 ## Step 3 — Refresh PROJECT.md
 
 If a **model override** was read in Step 1, set the `model` parameter to `{model_value}` on
@@ -139,6 +163,12 @@ Capture the current commit hash and timestamp.
 ---
 
 Wait for the task to complete.
+
+If `session_uuid` is non-null, record the documentation specialist's usage:
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
+  bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist
+```
 
 ## Step 3b — PR, merge, and phase advancement (roadmap phases only)
 
@@ -232,6 +262,7 @@ Do NOT delete:
 - `.pace/AGENT-REGISTRY.md` — preserve (registry is persistent)
 - `.pace/agents/` — preserve (registry tier 2 files)
 - `.pace/memory/semantic.md` — preserve (persistent cross-plan knowledge)
+- `.pace/usage.md` — preserve (usage data must persist for `/pace:create-pr` to read; cleared by the next `/pace:plan` run)
 
 ## Step 5 — Confirm
 

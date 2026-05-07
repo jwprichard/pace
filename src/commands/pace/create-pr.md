@@ -88,6 +88,13 @@ continue — the PR body adapts to what is available.
 3. `.pace/STATE.md` — task completion status
 4. `.pace/VERIFICATION.md` — verification findings (may not exist if verify hasn't run)
 5. `.pace/memory/episode.md` — execution log of what agents built
+6. `.pace/usage.md` — token usage data (may not exist if token tracking was not active)
+
+If `.pace/usage.md` exists, run:
+```bash
+python3 ~/.claude/lib/pace/token-usage.py format summary .pace/usage.md
+```
+Store the output as `{usage_summary}`. If the file does not exist, set `usage_summary = null`.
 
 Also gather git context:
 
@@ -135,6 +142,12 @@ verified. List any criteria that failed.}
 ## Commits
 
 {commit list from git log}
+
+{If usage_summary is non-null, include the following section. If usage_summary is null, omit it entirely — no placeholder text:}
+
+## Token Usage
+
+{usage_summary output — the formatted markdown table from token-usage.py format summary}
 
 ---
 🤖 Generated with [PACE](https://github.com/jwprichard/pace) — Plan, Assign, Coordinate, Execute
