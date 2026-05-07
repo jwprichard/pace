@@ -2,16 +2,64 @@
 
 **Plan, Assign, Coordinate, Execute**
 
-A spec-driven development workflow for Claude Code. PACE interviews you for requirements, produces small atomic plans, and delegates every task to the right specialist agent. No single-session degradation, no agents doing work outside their expertise.
+A spec-driven development workflow for Claude Code. PACE interviews you for requirements, produces atomic plans, and delegates every task to the right specialist agent. No single-session degradation, no agents doing work outside their expertise.
 
 PACE doesn't ship its own agents — it discovers whatever agents you have installed and routes to them intelligently. Bring your own agent roster.
 
 ## How It Works
 
-1. **Sync** — PACE scans your installed agents and builds a registry
-2. **Plan** — An interview extracts requirements and produces a plan with 2-4 atomic tasks
-3. **Execute** — Each task is delegated to the best-fit specialist agent in a fresh context
-4. **Verify** — Completed work is checked against the plan's success criteria
+1. **Sync** — PACE scans your installed agents and builds a two-tier registry
+2. **Scan** — PACE maps your codebase structure and writes `PROJECT.md` so agents have accurate context
+3. **Plan** — An interview extracts requirements; parallel domain experts draft plans; a synthesiser merges them into `PLAN.md`
+4. **Execute** — Each task is delegated to the best-fit specialist agent. Independent tasks run in parallel waves; each wave is committed before the next begins
+5. **Verify** — Completed work is checked against the plan's success criteria
+6. **Complete** — Branch is reconciled, runtime files are cleaned up, and the PR is finalised
+
+Tasks are atomic: each has one agent owner, is completable in one session, and has observable success criteria. Plan size is not artificially limited — a plan has as many tasks as the work genuinely requires.
+
+## Lifecycle Diagram
+
+```mermaid
+flowchart TD
+    SA["/pace:sync-agents\nBuild agent registry"]
+    SC["/pace:scan\nMap codebase → PROJECT.md"]
+    RM["/pace:roadmap\nDecompose into phases\n(optional)"]
+    PL["/pace:plan\nInterview → PLAN.md"]
+    EX["/pace:execute\nDelegate tasks to specialists"]
+    VF["/pace:verify\nCheck success criteria"]
+    CP["/pace:complete\nReconcile branch, clean up"]
+
+    SA --> SC
+    SC --> RM
+    RM --> PL
+    SC --> PL
+    PL --> EX
+    EX --> VF
+    VF --> CP
+
+    FX["/pace:fix\nTargeted fixes"]
+    AM["/pace:amend\nAdd tasks mid-plan"]
+    RS["/pace:resume\nPick up from last incomplete task"]
+
+    EX --> FX
+    FX --> EX
+    EX --> AM
+    AM --> EX
+    EX --> RS
+    RS --> EX
+
+    ST["/pace:status\nRead-only progress view"]
+    AG["/pace:agent\nDispatch one specialist directly"]
+    SE["/pace:settings\nModel overrides"]
+    US["/pace:usage\nToken usage breakdown"]
+    PR["/pace:create-pr\nOpen pull request"]
+
+    EX -.-> ST
+    EX -.-> AG
+    PL -.-> SE
+    EX -.-> US
+    VF -.-> PR
+```
 
 ## Quick Start
 
@@ -28,10 +76,13 @@ PACE doesn't ship its own agents — it discovers whatever agents you have insta
 ### First Run
 
 ```bash
-# Build the agent registry (required before planning)
+# 1. Build the agent registry (required before planning)
 /pace:sync-agents
 
-# Start planning
+# 2. Map your codebase (required before planning)
+/pace:scan
+
+# 3. Start planning
 /pace:plan
 ```
 
@@ -39,15 +90,77 @@ PACE doesn't ship its own agents — it discovers whatever agents you have insta
 
 | Command | What it does |
 |---|---|
-| `/pace:sync-agents` | Scans installed agents, writes the agent registry |
-| `/pace:plan` | Interviews you, produces PLAN.md with atomic tasks |
-| `/pace:execute` | Reads PLAN.md, delegates each task to a specialist agent |
-| `/pace:verify` | Checks completed work against plan success criteria |
-| `/pace:fix` | Dispatches targeted fixes — structured by default, `--light` for quick one-shot |
-| `/pace:amend` | Adds new tasks mid-execution — structured by default, `--light` for quick additions |
-| `/pace:status` | Shows plan progress and suggested next steps — read-only |
-| `/pace:resume` | Picks up from the last incomplete task |
-| `/pace:complete` | Reconciles branch state, finalises PR |
+| `/pace:sync-agents` | Scan installed agents and build the PACE agent registry |
+| `/pace:scan` | Scans the codebase and produces `.pace/PROJECT.md` for use by planning and execution agents |
+| `/pace:roadmap` | Interview the user, decompose a large feature into phases, and produce `ROADMAP.md` |
+| `/pace:plan` | Interview the user, assemble a domain planning team, and produce `PLAN.md` |
+| `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent, and tracks progress in `STATE.md` |
+| `/pace:verify` | Checks completed work against `PLAN.md` success criteria using the pace-verification-specialist |
+| `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — structured by default, `--light` for quick one-shot fixes |
+| `/pace:amend` | Adds new tasks to the current plan mid-execution — structured by default, `--light` for quick one-shot additions |
+| `/pace:status` | Shows the current plan status, progress, and suggested next steps — read-only, no work is executed |
+| `/pace:resume` | Picks up execution from the last incomplete task in `STATE.md` |
+| `/pace:create-pr` | Creates a PR from the PACE workflow — summarising what was requested, what was delivered, and what was verified |
+| `/pace:settings` | View and manage PACE workflow settings |
+| `/pace:usage` | Display token usage and cost breakdown for the current plan — grand total, per-phase subtotals, and per-task detail rows |
+| `/pace:complete` | Closes out a completed plan — full `PROJECT.md` refresh and `.pace/` runtime cleanup |
+| `/pace:agent` | Dispatches a specialist agent with baked-in codebase context — no blind exploration needed |
+
+## Command Internals
+
+### /pace:plan
+
+```mermaid
+flowchart TD
+    F0["Stage 0: Parse flags\n--tdd, --research, --abandon"]
+    F1["Stage 1: Pre-flight\nLoad settings + model override\nCheck agent registry\nCheck PROJECT.md (scan if missing)\nCheck prior plan state\nCheck roadmap context\nClear plan artifacts\nCapture session UUID"]
+    F15["Stage 1.5: Research\n(--research only)\nWebSearch + WebFetch\nWrite requirements/research.md"]
+    F2["Stage 2: Interview\nParse prompt + state understanding\nAsk 2-4 targeted questions\nWrite requirements/brief.md"]
+    F3["Stage 3: Agent selection\nSelect 2-3 domain planning agents\nfrom registry based on work type\n(+testing peer if --tdd)"]
+    F4["Stage 4: Parallel draft planning\nSpawn domain agents in parallel\nEach writes .pace/drafts/{agent}.md"]
+    F5["Stage 5: Synthesis\npace-synthesiser merges all drafts\ninto a single PLAN.md"]
+    F5b["Stage 5b: Token usage\nAggregate + record planning tokens"]
+    F6{"Stage 6: Approval\nApprove / Edit / Reject"}
+    F6A["Write STATE.md\nCreate branch if on main/master"]
+    F6B["Apply edits\nRe-present plan"]
+    F6C["Discard PLAN.md\nStart over"]
+
+    F0 --> F1
+    F1 --> F15
+    F15 --> F2
+    F1 --> F2
+    F2 --> F3
+    F3 --> F4
+    F4 --> F5
+    F5 --> F5b
+    F5b --> F6
+    F6 -->|Approve| F6A
+    F6 -->|Edit| F6B
+    F6B --> F6
+    F6 -->|Reject| F6C
+```
+
+### /pace:execute
+
+```mermaid
+flowchart TD
+    E1["Stage 1: Pre-flight\nLoad PLAN.md + STATE.md\nExtract session UUID\nDerive encoded project path\nStaleness check (PROJECT.md vs HEAD)\nLoad semantic memory\nRead model override from settings.md"]
+    E2["Stage 2: Load tasks + build waves\nParse pending/in_progress tasks\nBuild dependency graph\nSchedule into waves\nRegister tasks in Claude task system"]
+    E3a["Stage 3a: Mark wave in_progress\nEdit STATE.md: [ ] → [~]\nTaskUpdate → in_progress"]
+    E3b["Stage 3b: Spawn wave agents in parallel\nBuild context from PLAN.md\nSpawn all wave tasks simultaneously\nWait for all to complete"]
+    E3c["Stage 3c: Commit wave changes\nFor each successful task (in order):\ngit add files from ## Files Modified\ngit commit with task title"]
+    E3d["Stage 3d: Record wave outcomes\nSTATE.md: [~] → [x] or [!]\nepisode.md: append completion summary\nToken usage recording\nDoc-specialist patch (fire-and-forget)\nOn failure: record blocker, stop"]
+    E4["Stage 4: Complete\nSTATE.md status → complete\nRecord execute orchestrator token usage\nTell user to run /pace:verify"]
+
+    E1 --> E2
+    E2 --> E3a
+    E3a --> E3b
+    E3b --> E3c
+    E3c --> E3d
+    E3d -->|more waves| E3a
+    E3d -->|all done| E4
+    E3d -->|blocked| STOP["Stop — surface blocker\nRun /pace:resume to retry"]
+```
 
 ## Agent Registry
 
@@ -65,17 +178,23 @@ PACE creates a `.pace/` directory in your project root:
 
 ```
 .pace/
-  AGENT-REGISTRY.md   # Tier 1 — division index
-  PLAN.md              # Current plan with tasks and success criteria
-  STATE.md             # Progress tracking across sessions
-  settings.md          # Persistent configuration — plan-model / execute-model (not cleared by /pace:complete)
-  agents/              # Tier 2 — per-division agent lists
-    engineering.md
-    design.md
-    ...
+  AGENT-REGISTRY.md        # Tier 1 — division index (commit this)
+  agents/                  # Tier 2 — per-division agent lists (commit these)
+  ROADMAP.md               # Phase decomposition for large features (persists across plans)
+  PLAN.md                  # Current plan with tasks and success criteria
+  STATE.md                 # Operational memory — task status and blockers
+  PROJECT.md               # Codebase map — stack, structure, conventions
+  settings.md              # Persistent configuration — not cleared by /pace:complete
+  usage.md                 # Token usage and cost tracking — per-phase and per-task breakdown
+  memory/
+    episode.md             # Episodic memory — what was built this execution (cleared at complete)
+    semantic.md            # Semantic memory — cross-plan decisions and patterns (never cleared)
+  requirements/
+    brief.md               # Compiled interview requirements (plan-specific)
+    research.md            # Research findings (plan-specific, --research only)
 ```
 
-These files are generated — don't edit them by hand (except `STATE.md` if you need to manually mark a task, or `settings.md` which you create yourself).
+`AGENT-REGISTRY.md`, `agents/`, `PROJECT.md`, and `settings.md` are safe to commit. The rest are plan-scoped runtime state.
 
 ## Configuration
 
@@ -111,11 +230,13 @@ The orchestrator session model is unaffected. When a field is blank or `settings
 
 **Fresh context per task.** Each task runs in an isolated agent session. No context degradation across a multi-task plan.
 
-**Plans are small.** 2-4 tasks maximum. If the work is bigger, split it into multiple plans.
+**Tasks are atomic.** Each task has one agent owner, is completable in one session, and has observable success criteria. Plan size is not artificially limited — a plan contains as many tasks as the work genuinely requires.
 
 **Verification is goal-backward.** Success criteria describe what must be true, not what was done.
 
 **Bring your own agents.** PACE routes to whatever agents are installed. It works with Agency Agents, custom agents, or any combination. If no agent fits a task, the planner flags it instead of falling back to direct implementation.
+
+**State is simple.** A single `STATE.md` file tracks all task progress. No state machine, no database.
 
 ## Install Targets
 
