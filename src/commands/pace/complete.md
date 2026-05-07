@@ -43,7 +43,7 @@ by `/pace:plan`). Extract the UUID value and store it as `session_uuid`.
 
 Also derive the encoded project path used by Claude Code's session store. Run:
 ```bash
-pwd | sed 's|/|-|g' | sed 's|^-||'
+printf '%s\n' "${PWD//[\/.]/-}"
 ```
 Store the result as `encoded_project_path`.
 

@@ -63,7 +63,7 @@ Read `.pace/STATE.md` (if it exists) and extract the `_Session: {uuid}_` line. S
 the UUID value as `session_uuid`. Also derive the encoded project path:
 
 ```bash
-printf '%s\n' "${PWD//\//-}"
+printf '%s\n' "${PWD//[\/.]/-}"
 ```
 
 Store the output as `encoded_project_path`.

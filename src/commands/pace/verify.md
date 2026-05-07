@@ -41,7 +41,7 @@ Read the `_Session: {uuid}_` line from STATE.md. Extract the UUID value and stor
 it as `session_uuid`. Also derive the encoded project path:
 
 ```bash
-printf '%s\n' "${PWD//\//-}"
+printf '%s\n' "${PWD//[\/.]/-}"
 ```
 
 Store the output as `encoded_project_path`.

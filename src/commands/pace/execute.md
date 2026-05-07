@@ -49,9 +49,9 @@ If no such line is found, set `session_uuid = null` and log a warning:
 Warning: STATE.md has no _Session_ line — token usage recording will be skipped.
 ```
 
-Derive the encoded project path (replace every `/` with `-`):
+Derive the encoded project path (replace every `/` and `.` with `-`):
 ```bash
-printf '%s\n' "${PWD//\//-}"
+printf '%s\n' "${PWD//[\/.]/-}"
 ```
 Store the output as `encoded_project_path`.
 

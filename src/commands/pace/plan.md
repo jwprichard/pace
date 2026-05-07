@@ -655,9 +655,9 @@ Once the synthesiser completes, record token usage for the planning phase.
 
 Run the following bash commands in order:
 
-1. Derive the encoded project path from the current working directory (replace every `/` with `-`):
+1. Derive the encoded project path from the current working directory (replace every `/` and `.` with `-`):
    ```bash
-   printf '%s\n' "${PWD//\//-}"
+   printf '%s\n' "${PWD//[\/.]/-}"
    ```
    Store the output as `encoded_project_path`.
 

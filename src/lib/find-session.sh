@@ -13,9 +13,11 @@
 set -euo pipefail
 
 # Encode the absolute path of the current working directory by replacing each
-# '/' with '-'.  For example:
-#   /home/ubuntu/repos/pace  →  -home-ubuntu-repos-pace
-encoded_path="${PWD//\//-}"
+# '/' and '.' with '-', matching Claude Code's project directory naming.
+# For example:
+#   /home/ubuntu/repos/pace                        →  -home-ubuntu-repos-pace
+#   /home/ubuntu/repos/app/.claude/worktrees/feat  →  -home-ubuntu-repos-app--claude-worktrees-feat
+encoded_path="${PWD//[\/.]/-}"
 
 project_dir="${HOME}/.claude/projects/${encoded_path}"
 
