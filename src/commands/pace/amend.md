@@ -60,6 +60,23 @@ The orchestrator's own model is never changed by this setting.
 > not text inside the prompt. Correct usage:
 > `Agent(description: "...", prompt: "...", model: "{model_value}")`
 
+### Session UUID
+
+Read `.pace/STATE.md` (if it exists) and extract the `_Session: {uuid}_` line. Store
+the UUID value as `session_uuid`. Also derive the encoded project path:
+
+```bash
+printf '%s\n' "${PWD//\//-}"
+```
+
+Store the output as `encoded_project_path`.
+
+If STATE.md does not exist yet, or the `_Session:` line is missing, or the UUID is
+empty, set `session_uuid = null`. Log a warning and skip all usage recording steps:
+```
+Warning: No session UUID found in STATE.md — token usage will not be recorded.
+```
+
 ---
 
 ## Stage 1 — Pre-flight (both modes)
@@ -223,6 +240,17 @@ You are adding new functionality as @{agent name}, as an amendment to an existin
 ---
 
 Wait for the task to complete.
+
+### Record light mode amendment usage
+
+If `session_uuid` is available, run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh amend light {agent_type}
+```
+
+Where `{agent_type}` is the agent type selected in L3. If this command fails, continue
+without interrupting the user — token recording is non-blocking.
 
 ### L7 — Commit changes
 
@@ -445,6 +473,18 @@ You are executing **Amendment {N}: {title}** as part of a PACE plan.
 ---
 
 Wait for all dispatched amendment agents to complete.
+
+### Record amendment agent usage
+
+If `session_uuid` is available, record each amendment agent's token usage in order. For
+each amendment task A{N} dispatched in this stage, run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh amend A{N} {agent_type}
+```
+
+Where `{N}` is the amendment number and `{agent_type}` is the agent assigned to that
+amendment task. If these commands fail, continue without interrupting the user.
 
 ### Stage 8 — Commit and record outcomes
 

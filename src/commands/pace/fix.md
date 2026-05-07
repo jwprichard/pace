@@ -57,6 +57,23 @@ The orchestrator's own model is never changed by this setting.
 > not text inside the prompt. Correct usage:
 > `Agent(description: "...", prompt: "...", model: "{model_value}")`
 
+### Session UUID
+
+Read `.pace/STATE.md` (if it exists) and extract the `_Session: {uuid}_` line. Store
+the UUID value as `session_uuid`. Also derive the encoded project path:
+
+```bash
+printf '%s\n' "${PWD//\//-}"
+```
+
+Store the output as `encoded_project_path`.
+
+If STATE.md does not exist yet, or the `_Session:` line is missing, or the UUID is
+empty, set `session_uuid = null`. Log a warning and skip all usage recording steps:
+```
+Warning: No session UUID found in STATE.md — token usage will not be recorded.
+```
+
 ---
 
 ## LIGHT MODE
@@ -156,6 +173,17 @@ You are applying a targeted fix as @{agent name}.
 ---
 
 Wait for the task to complete.
+
+### Record light mode fix usage
+
+If `session_uuid` is available, run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix light {agent_type}
+```
+
+Where `{agent_type}` is the agent type selected in L4. If this command fails, continue
+without interrupting the user — token recording is non-blocking.
 
 ### L7 — Patch documentation
 
@@ -346,6 +374,18 @@ You are applying **Fix {N}: {title}** as part of a PACE plan.
 ---
 
 Wait for all fix agents to complete.
+
+### Record fix agent usage
+
+If `session_uuid` is available, record each fix agent's token usage in order. For each
+fix task F{N} dispatched in this stage, run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix F{N} {agent_type}
+```
+
+Where `{N}` is the fix number and `{agent_type}` is the agent assigned to that fix
+task. If these commands fail, continue without interrupting the user.
 
 ### Stage 7 — Record outcomes
 

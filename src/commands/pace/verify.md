@@ -35,6 +35,23 @@ Read `.pace/PLAN.md`. If it does not exist, stop:
 No PLAN.md found. Cannot verify without a plan.
 ```
 
+### Session UUID
+
+Read the `_Session: {uuid}_` line from STATE.md. Extract the UUID value and store
+it as `session_uuid`. Also derive the encoded project path:
+
+```bash
+printf '%s\n' "${PWD//\//-}"
+```
+
+Store the output as `encoded_project_path`.
+
+If the `_Session:` line is missing or the UUID is empty, log a warning and skip all
+usage recording steps in this command:
+```
+Warning: No session UUID found in STATE.md — token usage will not be recorded.
+```
+
 ### Model override
 
 If `.pace/settings.md` exists, read it and look for an `execute-model:` line in the
@@ -78,6 +95,16 @@ Return the full structured verification report.
 ---
 
 Wait for the task to complete.
+
+### Record verification specialist usage
+
+If `session_uuid` is available, run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify orchestrator verify-specialist
+```
+
+If this command fails, continue without interrupting the user — token recording is non-blocking.
 
 ## Step 3 — Present the verdict
 
@@ -153,12 +180,36 @@ When done, confirm each criterion you fixed and what you changed.
 
 Wait for all fix agents to complete.
 
+### Record fix agent usage
+
+If `session_uuid` is available, record each fix agent's token usage in order. For each
+fix agent N (corresponding to each failing task processed in this step), run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type}
+```
+
+Where `{N}` is the sequential fix number (1, 2, 3, …) and `{agent_type}` is the agent
+type used for that fix. If these commands fail, continue without interrupting the user.
+
 ## Step 5 — Re-verify
 
 Spawn `pace-verification-specialist` again (same prompt as Step 2, including
 `model: {model_value}` in the Agent tool call when the model override is set).
 
-Wait for it to complete, then return to **Step 3** to present the new verdict.
+Wait for it to complete.
+
+### Record re-verify specialist usage
+
+If `session_uuid` is available, run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify re-verify verify-specialist
+```
+
+If this command fails, continue without interrupting the user — token recording is non-blocking.
+
+Then return to **Step 3** to present the new verdict.
 
 If the second pass still returns NEEDS WORK, present the remaining failures and
 ask the user again — do not loop automatically more than once without user confirmation.
