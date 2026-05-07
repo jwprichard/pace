@@ -39,6 +39,26 @@ Check `## Status` in STATE.md:
 - If `blocked` → tell the user a task is blocked, show the blocker from `## Blockers`,
   and ask whether they want to retry or skip
 
+### Session UUID and project path (for token usage)
+
+Scan the lines of STATE.md for a line matching `_Session: {uuid}_`. Extract the UUID
+value and store it as `session_uuid`.
+
+If no such line is found, set `session_uuid = null` and log a warning:
+```
+Warning: STATE.md has no _Session_ line — token usage recording will be skipped.
+```
+
+Derive the encoded project path (replace every `/` with `-`):
+```bash
+printf '%s\n' "${PWD//\//-}"
+```
+Store the output as `encoded_project_path`.
+
+All token usage recording steps later in this command are conditional on
+`session_uuid` being non-null. If `session_uuid` is null, skip every usage-recording
+bash command silently.
+
 ### Staleness check
 
 If `.pace/PROJECT.md` exists:
@@ -259,6 +279,19 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
+**Record token usage for this task (if `session_uuid` is non-null):**
+
+Run the following bash commands:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent}
+```
+
+Where `{number}` is the task number and `{agent}` is the agent type from the task line
+in STATE.md. If the command fails, continue without interrupting the user — token
+recording is non-blocking.
+
 Then spawn `pace-documentation-specialist` using the Agent tool in patch mode.
 If a **model override** was read in Stage 1, set the `model` parameter to `{model_value}` on
 this Agent tool call. When no model override is set, omit the `model` parameter
@@ -276,6 +309,19 @@ Update .pace/PROJECT.md to reflect any changes introduced by this task.
 (Spawn this as a fire-and-forget parallel Agent tool call — do not wait for it before
 processing the next task in the wave outcome loop. If PROJECT.md does not
 exist, the specialist will skip silently.)
+
+**Record token usage for the documentation-specialist patch (if `session_uuid` is non-null):**
+
+After spawning the documentation-specialist (fire-and-forget — do not wait for it to
+complete before recording; run these bash commands after spawning), run:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist
+```
+
+Where `{number}` is the task number whose patch is being applied. If the command fails,
+continue without interrupting the user — token recording is non-blocking.
 
 **On failure:** Edit STATE.md — change `[~]` to `[!]`. Record the error in
 `## Blockers`:
@@ -300,6 +346,17 @@ If multiple tasks in the same wave fail, record all blockers before stopping.
 When all tasks are `[x]`:
 
 Edit STATE.md — update `## Status` to `complete`.
+
+**Record execute orchestrator token usage (if `session_uuid` is non-null):**
+
+Run the following bash commands:
+
+```bash
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute orchestrator execute-orchestrator
+```
+
+If the command fails, continue without interrupting the user — token recording is non-blocking.
 
 Tell the user:
 
