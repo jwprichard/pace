@@ -80,6 +80,14 @@ if [ -d "$SRC_DIR/agents" ]; then
   done < <(find "$SRC_DIR/agents" -name "*.md" -type f)
 fi
 
+# --- Remove PACE lib scripts ---
+LIB_DIR="$DEST/lib/pace"
+if [ -d "$LIB_DIR" ]; then
+  rm -rf "$LIB_DIR"
+  echo -e "  ${RED}✗${NC} lib/pace/ (token-usage.py, find-session.sh, append-usage.sh)"
+  REMOVED=$((REMOVED + 1))
+fi
+
 # --- Optional runtime cleanup ---
 if [ "$INCLUDE_RUNTIME" = true ]; then
   PACE_DIR="$(pwd)/.pace"

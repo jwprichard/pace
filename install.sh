@@ -127,6 +127,21 @@ if [ -d "$SRC_DIR/agents" ]; then
   install_files "$SRC_DIR/agents" "$DEST/agents" "agents"
 fi
 
+# --- Install lib scripts ---
+if [ -d "$SRC_DIR/lib" ]; then
+  LIB_DEST="$DEST/lib/pace"
+  mkdir -p "$LIB_DEST"
+  for script in token-usage.py find-session.sh append-usage.sh; do
+    src_file="$SRC_DIR/lib/$script"
+    if [ -f "$src_file" ]; then
+      cp "$src_file" "$LIB_DEST/$script"
+      chmod +x "$LIB_DEST/$script"
+      echo -e "  ${GREEN}✓${NC} lib/pace/$script"
+      INSTALLED=$((INSTALLED + 1))
+    fi
+  done
+fi
+
 # --- Summary ---
 echo ""
 echo -e "${GREEN}${BOLD}Done.${NC} Installed ${INSTALLED} files to ${DEST}"
