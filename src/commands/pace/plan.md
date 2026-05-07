@@ -170,8 +170,20 @@ If it exists:
 
 ```bash
 rm -rf .pace/requirements/ .pace/drafts/
+rm -f .pace/usage.md
 mkdir -p .pace/requirements/ .pace/drafts/
 ```
+
+### Capture session UUID
+
+Run the following bash command and store the output as `session_uuid`:
+
+```bash
+bash ~/.claude/lib/pace/find-session.sh
+```
+
+If the command exits non-zero or returns an empty string, set `session_uuid = unknown`.
+Store `session_uuid` for use in Stage 6 (STATE.md) and token usage recording.
 
 ## Stage 1.5 — Research
 
@@ -637,6 +649,31 @@ If `tdd_mode` is `false`, the Stage 5 prompt is identical to the base prompt
 above — no TDD compliance block is appended and no `_TDD: enabled_` header
 is written.
 
+## Stage 5b — Record Planning Phase Token Usage
+
+Once the synthesiser completes, record token usage for the planning phase.
+
+Run the following bash commands in order:
+
+1. Derive the encoded project path from the current working directory (replace every `/` with `-`):
+   ```bash
+   printf '%s\n' "${PWD//\//-}"
+   ```
+   Store the output as `encoded_project_path`.
+
+2. Aggregate token data for the session:
+   ```bash
+   python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path}
+   ```
+   Store the JSON output as `usage_json`. If the command fails or returns empty output, skip step 3.
+
+3. Pipe the aggregated JSON to the append script:
+   ```bash
+   printf '%s' "{usage_json}" | bash ~/.claude/lib/pace/append-usage.sh plan orchestrator plan-orchestrator
+   ```
+
+If any of these commands fail, continue to Stage 6 without interrupting the user — token recording is non-blocking.
+
 ## Stage 6 — Approval
 
 Once the synthesiser completes, read `.pace/PLAN.md` and present it to the
@@ -663,6 +700,7 @@ Write `.pace/STATE.md` using this format:
 # STATE
 _Plan: {plan title}_
 _Started: {ISO timestamp}_
+_Session: {session_uuid}_
 
 ## Status
 in_progress
