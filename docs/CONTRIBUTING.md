@@ -24,10 +24,12 @@ pace/
         sync-agents.md             # 15 slash-command definitions
         roadmap.md
         plan.md
+        scan.md
         execute.md
         verify.md
         fix.md
         amend.md
+        agent.md
         resume.md
         status.md
         create-pr.md

@@ -1,6 +1,6 @@
 # PROJECT MAP
-_Scanned: 2026-05-07T03:59:35Z_
-_Commit: 6301a14_
+_Scanned: 2026-05-08T07:12:00Z_
+_Commit: 1e43d36_
 
 ## Stack
 - **Language:** Markdown (command/agent definitions), Bash (installer, shell scripts), Python 3 (lib scripts)
@@ -14,7 +14,8 @@ _Commit: 6301a14_
 - `src/commands/pace/` — slash-command definitions (15 commands) installed into `.claude/commands/pace/`
 - `src/agents/` — top-level agent definitions (pace-synthesiser)
 - `src/agents/pace/` — PACE specialist sub-agents (codebase-analyst, documentation-specialist, verification-specialist)
-- `docs/` — user-facing documentation (README, architecture)
+- `docs/` — user-facing documentation (README, architecture, getting-started walkthrough, contribution guidelines)
+- `examples/` — sample runtime files (sample-plan.md, sample-registry.md, sample-state.md) illustrating PACE formats
 - `.pace/` — runtime state (PLAN.md, STATE.md, AGENT-REGISTRY.md, settings.md, usage.md, drafts, memory, requirements)
 - `.pace/agents/` — tier-2 agent registry files, one per division
 - `.pace/memory/` — episodic and semantic memory files
