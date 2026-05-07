@@ -45,6 +45,7 @@ PACE doesn't ship its own agents — it discovers whatever agents you have insta
 | `/pace:verify` | Checks completed work against plan success criteria |
 | `/pace:fix` | Dispatches targeted fixes — structured by default, `--light` for quick one-shot |
 | `/pace:amend` | Adds new tasks mid-execution — structured by default, `--light` for quick additions |
+| `/pace:status` | Shows plan progress and suggested next steps — read-only |
 | `/pace:resume` | Picks up from the last incomplete task |
 | `/pace:complete` | Reconciles branch state, finalises PR |
 

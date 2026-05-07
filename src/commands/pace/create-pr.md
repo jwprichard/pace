@@ -1,7 +1,7 @@
 ---
 name: pace:create-pr
 description: Creates a PR from the PACE workflow — summarising what was requested, what was delivered, and what was verified
-argument-hint: "[--auto-review]"
+argument-hint: "[--auto-review] [--update]"
 allowed-tools:
   - Read
   - Bash
@@ -15,6 +15,9 @@ files — requirements brief, PLAN.md, STATE.md, VERIFICATION.md, and episodic
 memory — and compile it into a structured PR body.
 
 Optionally tag the PR with `@claude review` to trigger automated review.
+
+With `--update`, refresh an existing PR's description with the latest PACE state
+(e.g. after fixes have added more token usage).
 </objective>
 
 <process>
@@ -25,6 +28,8 @@ Read the full argument string.
 
 - If the argument contains `--auto-review`: set `auto_review = true`, strip the flag
 - Otherwise set `auto_review = false`
+- If the argument contains `--update`: set `update_mode = true`, strip the flag
+- Otherwise set `update_mode = false`
 
 ## Stage 1 — Pre-flight
 
@@ -66,7 +71,21 @@ git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
 If this fails (no upstream), the branch needs pushing. Store `needs_push = true`.
 Otherwise store `needs_push = false`.
 
-### Check 4: PACE artifacts
+### Check 4: Existing PR (--update only)
+
+If `update_mode = true`, look up the existing PR for this branch:
+```bash
+gh pr view {branch} --json number,url --jq '.number'
+```
+
+If this fails (no PR exists for the branch), stop:
+```
+No open PR found for branch {branch}. Run without --update to create one.
+```
+
+Store the PR number as `{pr_number}` and the URL as `{pr_url}`.
+
+### Check 5: PACE artifacts
 
 Read `.pace/STATE.md`. If it does not exist, stop:
 ```
@@ -158,14 +177,23 @@ verified. List any criteria that failed.}
 Derive the PR title from the PLAN.md objective line. Keep it under 70 characters.
 If the objective is too long, summarise it.
 
-## Stage 4 — Push and create PR
+## Stage 4 — Push and create/update PR
 
 If `needs_push = true`:
 ```bash
 git push -u origin {branch}
 ```
 
-Create the PR:
+If `gh` is not available, fall back to displaying the PR body and telling the
+user to create/update the PR manually:
+```
+gh CLI not found. Here is the PR body — create the PR manually:
+
+{PR body}
+```
+
+### If `update_mode = false` (create new PR):
+
 ```bash
 gh pr create --title "{pr_title}" --body "$(cat <<'EOF'
 {compiled PR body}
@@ -173,12 +201,19 @@ EOF
 )"
 ```
 
-If `gh` is not available, fall back to displaying the PR body and telling the
-user to create the PR manually:
-```
-gh CLI not found. Here is the PR body — create the PR manually:
+### If `update_mode = true` (update existing PR):
 
-{PR body}
+Push any new commits first:
+```bash
+git push
+```
+
+Update the PR description:
+```bash
+gh pr edit {pr_number} --body "$(cat <<'EOF'
+{compiled PR body}
+EOF
+)"
 ```
 
 ## Stage 5 — Auto-review (optional)
@@ -196,9 +231,14 @@ PR created: {pr_url}
 Automated review triggered via @claude review comment.
 ```
 
-If `auto_review = false`:
+If `auto_review = false` and `update_mode = false`:
 ```
 PR created: {pr_url}
+```
+
+If `update_mode = true`:
+```
+PR updated: {pr_url}
 ```
 
 </process>

@@ -9,7 +9,6 @@ Subcommands:
 
 import json
 import os
-import re
 import sys
 import glob
 from pathlib import Path
@@ -59,7 +58,8 @@ def normalise_model(raw: str) -> str:
         return "unknown"
     lowered = raw.lower()
     # Strip trailing date suffix like -20250415 or -20260101
-    lowered = re.sub(r"-\d{8}$", "", lowered)
+    if len(lowered) >= 9 and lowered[-9] == "-" and lowered[-8:].isdigit():
+        lowered = lowered[:-9]
     for family in ("opus", "sonnet", "haiku"):
         if family in lowered:
             return family
