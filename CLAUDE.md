@@ -24,9 +24,11 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria |
 | `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — `--light` for quick one-shot fixes |
 | `/pace:amend` | Adds new tasks to the current plan mid-execution — `--light` for quick one-shot additions |
+| `/pace:status` | Shows plan progress and suggested next steps — read-only |
 | `/pace:resume` | Reads `STATE.md`, picks up from the last incomplete task |
 | `/pace:create-pr` | Creates a PR summarising what was requested, delivered, and verified |
 | `/pace:settings` | View and manage PACE settings (model overrides, etc.) |
+| `/pace:usage` | Displays token usage breakdown for the current plan |
 | `/pace:complete` | Reconciles branch state, finalises PR |
 
 ## Agents
@@ -58,6 +60,7 @@ Run `/pace:sync-agents` after installing or updating agents.
   STATE.md                 # Operational memory — task status and blockers
   PROJECT.md               # Codebase map — stack, structure, conventions (includes ## Services table for monorepo projects)
   settings.md              # Persistent workflow configuration — model override, etc. (not cleared by /pace:complete)
+  usage.md                 # Token usage and cost tracking — per-phase and per-task breakdown (cleared by /pace:plan, preserved by /pace:complete)
   memory/
     episode.md             # Episodic memory — what was built this execution (cleared at complete)
     semantic.md            # Semantic memory — cross-plan decisions and patterns (never cleared)
@@ -117,9 +120,15 @@ pace/
         fix.md
         amend.md
         resume.md
+        status.md
         create-pr.md
         complete.md
         settings.md
+        usage.md
+    lib/
+      token-usage.py
+      find-session.sh
+      append-usage.sh
   docs/
     README.md
     CONTRIBUTING.md
