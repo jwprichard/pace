@@ -98,9 +98,15 @@ Wait for the task to complete.
 
 ### Record verification specialist usage
 
-If `session_uuid` is available, run:
+If `session_uuid` is available, run the following. When a **model override** was read in
+Step 1, pass it as the 5th argument to `append-usage.sh`. When no model override is set,
+omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify orchestrator verify-specialist {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify orchestrator verify-specialist
 ```
 
@@ -183,9 +189,15 @@ Wait for all fix agents to complete.
 ### Record fix agent usage
 
 If `session_uuid` is available, record each fix agent's token usage in order. For each
-fix agent N (corresponding to each failing task processed in this step), run:
+fix agent N (corresponding to each failing task processed in this step), run the following.
+When a **model override** was read in Step 1, pass it as the 5th argument to
+`append-usage.sh`. When no model override is set, omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type} {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type}
 ```
 
@@ -201,9 +213,15 @@ Wait for it to complete.
 
 ### Record re-verify specialist usage
 
-If `session_uuid` is available, run:
+If `session_uuid` is available, run the following. When a **model override** was read in
+Step 1, pass it as the 5th argument to `append-usage.sh`. When no model override is set,
+omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify re-verify verify-specialist {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify re-verify verify-specialist
 ```
 

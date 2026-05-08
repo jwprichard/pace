@@ -141,8 +141,16 @@ Allowed tools: Read, Write
 
 Wait for the task to complete.
 
-If `session_uuid` is non-null, record the semantic memory agent's usage:
+If `session_uuid` is non-null, record the semantic memory agent's usage. When a **model
+override** was read in Step 1, pass it as the 5th argument to `append-usage.sh`. When no
+model override is set, omit the 5th argument entirely:
+
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
+  bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
   bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser
 ```
@@ -164,8 +172,16 @@ Capture the current commit hash and timestamp.
 
 Wait for the task to complete.
 
-If `session_uuid` is non-null, record the documentation specialist's usage:
+If `session_uuid` is non-null, record the documentation specialist's usage. When a **model
+override** was read in Step 1, pass it as the 5th argument to `append-usage.sh`. When no
+model override is set, omit the 5th argument entirely:
+
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
+  bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
   bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist
 ```

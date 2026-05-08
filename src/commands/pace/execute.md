@@ -281,9 +281,16 @@ _Completed: {ISO timestamp}_
 
 **Record token usage for this task (if `session_uuid` is non-null):**
 
-Run the following bash commands:
+Run the following bash commands. When a **model override** was read in Stage 1, pass it
+as the 5th argument to `append-usage.sh`. When no model override is set, omit the 5th
+argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent} {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
   | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent}
 ```
@@ -313,9 +320,16 @@ exist, the specialist will skip silently.)
 **Record token usage for the documentation-specialist patch (if `session_uuid` is non-null):**
 
 After spawning the documentation-specialist (fire-and-forget — do not wait for it to
-complete before recording; run these bash commands after spawning), run:
+complete before recording; run these bash commands after spawning), run the following.
+When a **model override** was read in Stage 1, pass it as the 5th argument to
+`append-usage.sh`. When no model override is set, omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
   | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist
 ```

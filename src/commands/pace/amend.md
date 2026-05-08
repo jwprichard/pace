@@ -243,9 +243,15 @@ Wait for the task to complete.
 
 ### Record light mode amendment usage
 
-If `session_uuid` is available, run:
+If `session_uuid` is available, run the following. When a **model override** was read in
+Stage 0, pass it as the 5th argument to `append-usage.sh`. When no model override is set,
+omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh amend light {agent_type} {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh amend light {agent_type}
 ```
 
@@ -477,9 +483,15 @@ Wait for all dispatched amendment agents to complete.
 ### Record amendment agent usage
 
 If `session_uuid` is available, record each amendment agent's token usage in order. For
-each amendment task A{N} dispatched in this stage, run:
+each amendment task A{N} dispatched in this stage, run the following. When a **model
+override** was read in Stage 0, pass it as the 5th argument to `append-usage.sh`. When
+no model override is set, omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh amend A{N} {agent_type} {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh amend A{N} {agent_type}
 ```
 
