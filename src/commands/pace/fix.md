@@ -59,20 +59,30 @@ The orchestrator's own model is never changed by this setting.
 
 ### Session UUID
 
-Read `.pace/STATE.md` (if it exists) and extract the `_Session: {uuid}_` line. Store
-the UUID value as `session_uuid`. Also derive the encoded project path:
+Re-detect the current session UUID by running:
+
+```bash
+bash ~/.claude/lib/pace/find-session.sh
+```
+
+Store the output as `session_uuid`. If the command fails or returns empty,
+set `session_uuid = null` and log a warning:
+```
+Warning: Could not detect session UUID — token usage will not be recorded.
+```
+
+If `session_uuid` is non-null and `.pace/STATE.md` exists, read the `_Session: {uuid}_`
+line from STATE.md. If the stored UUID differs from the detected one, update STATE.md's
+`_Session:` line to reflect the current session:
+- Edit the line `_Session: {old_uuid}_` → `_Session: {session_uuid}_`
+
+Also derive the encoded project path:
 
 ```bash
 printf '%s\n' "${PWD//[\/.]/-}"
 ```
 
 Store the output as `encoded_project_path`.
-
-If STATE.md does not exist yet, or the `_Session:` line is missing, or the UUID is
-empty, set `session_uuid = null`. Log a warning and skip all usage recording steps:
-```
-Warning: No session UUID found in STATE.md — token usage will not be recorded.
-```
 
 ---
 
@@ -176,9 +186,15 @@ Wait for the task to complete.
 
 ### Record light mode fix usage
 
-If `session_uuid` is available, run:
+If `session_uuid` is available, run the following. When a **model override** was read in
+Stage 0, pass it as the 5th argument to `append-usage.sh`. When no model override is set,
+omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix light {agent_type} "" {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix light {agent_type}
 ```
 
@@ -378,9 +394,15 @@ Wait for all fix agents to complete.
 ### Record fix agent usage
 
 If `session_uuid` is available, record each fix agent's token usage in order. For each
-fix task F{N} dispatched in this stage, run:
+fix task F{N} dispatched in this stage, run the following. When a **model override** was
+read in Stage 0, pass it as the 5th argument to `append-usage.sh`. When no model override
+is set, omit the 5th argument entirely:
 
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix F{N} {agent_type} "" {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix F{N} {agent_type}
 ```
 

@@ -38,19 +38,28 @@ Run /pace:execute to continue, or /pace:resume to pick up from where you left of
 
 ### Session UUID
 
-Scan STATE.md for a line matching `_Session: {uuid}_` (italicised metadata line written
-by `/pace:plan`). Extract the UUID value and store it as `session_uuid`.
+Re-detect the current session UUID by running:
+
+```bash
+bash ~/.claude/lib/pace/find-session.sh
+```
+
+Store the output as `session_uuid`. If the command fails or returns empty,
+set `session_uuid = null` and log a warning:
+```
+Warning: Could not detect session UUID. Token usage for this phase will not be recorded.
+```
+
+If `session_uuid` is non-null, read the `_Session: {uuid}_` line from STATE.md.
+If the stored UUID differs from the detected one, update STATE.md's `_Session:` line
+to reflect the current session:
+- Edit the line `_Session: {old_uuid}_` → `_Session: {session_uuid}_`
 
 Also derive the encoded project path used by Claude Code's session store. Run:
 ```bash
 printf '%s\n' "${PWD//[\/.]/-}"
 ```
 Store the result as `encoded_project_path`.
-
-If the `_Session:` line is absent, log a warning and set `session_uuid = null`:
-```
-Warning: No session UUID found in STATE.md. Token usage for this phase will not be recorded.
-```
 
 Make all usage recording in this command conditional on `session_uuid` being non-null.
 
@@ -141,8 +150,16 @@ Allowed tools: Read, Write
 
 Wait for the task to complete.
 
-If `session_uuid` is non-null, record the semantic memory agent's usage:
+If `session_uuid` is non-null, record the semantic memory agent's usage. When a **model
+override** was read in Step 1, pass it as the 5th argument to `append-usage.sh`. When no
+model override is set, omit the 5th argument entirely:
+
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
+  bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser "" {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
   bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser
 ```
@@ -164,8 +181,16 @@ Capture the current commit hash and timestamp.
 
 Wait for the task to complete.
 
-If `session_uuid` is non-null, record the documentation specialist's usage:
+If `session_uuid` is non-null, record the documentation specialist's usage. When a **model
+override** was read in Step 1, pass it as the 5th argument to `append-usage.sh`. When no
+model override is set, omit the 5th argument entirely:
+
 ```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
+  bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist "" {model_value}
+
+# Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
   bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist
 ```

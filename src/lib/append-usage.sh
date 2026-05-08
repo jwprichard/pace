@@ -3,15 +3,18 @@
 # Appends token usage entries to .pace/usage.md.
 #
 # Usage:
-#   bash src/lib/append-usage.sh <phase> <task> <agent_type> [json-file]
-#   echo '...' | bash src/lib/append-usage.sh <phase> <task> <agent_type>
+#   bash src/lib/append-usage.sh <phase> <task> <agent_type> [json-file] [model-override]
+#   echo '...' | bash src/lib/append-usage.sh <phase> <task> <agent_type> ['' [model-override]]
 #
 # Arguments:
-#   phase       Phase name, e.g. "plan", "execute", "verify". Written as ## Plan heading.
-#   task        Task number or the literal "orchestrator".
-#   agent_type  Agent type label written into the Agent column.
-#   json-file   Optional path to JSON file from token-usage.py aggregate.
-#               If omitted, JSON is read from stdin.
+#   phase          Phase name, e.g. "plan", "execute", "verify". Written as ## Plan heading.
+#   task           Task number or the literal "orchestrator".
+#   agent_type     Agent type label written into the Agent column.
+#   json-file      Optional path to JSON file from token-usage.py aggregate.
+#                  If omitted, JSON is read from stdin.
+#   model-override Optional model name to use for every emitted row (e.g. "sonnet", "opus").
+#                  When provided and non-empty, overrides the model read from the aggregate JSON.
+#                  When omitted or empty, the model is read from the JSON as usual.
 #
 # Exit codes:
 #   0  Success
@@ -33,7 +36,8 @@ fi
 PHASE="$1"
 TASK="$2"
 AGENT_TYPE="$3"
-JSON_SOURCE="${4:-}"   # optional path; empty means read stdin
+JSON_SOURCE="${4:-}"      # optional path; empty means read stdin
+MODEL_OVERRIDE="${5:-}"   # optional model override; empty means read from JSON
 
 # Capitalise first letter of the phase name for the ## heading
 PHASE_CAP="$(printf '%s' "${PHASE}" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')"
@@ -104,9 +108,10 @@ cat > "${PY_TMP}" << 'PYEOF'
 import json
 import sys
 
-json_file   = sys.argv[1]
-task_label  = sys.argv[2]
-agent_label = sys.argv[3]
+json_file      = sys.argv[1]
+task_label     = sys.argv[2]
+agent_label    = sys.argv[3]
+model_override = sys.argv[4] if len(sys.argv) > 4 else ""
 
 with open(json_file, "r", encoding="utf-8") as fh:
     raw = fh.read()
@@ -138,7 +143,7 @@ subagents = data.get("subagents", [])
 if not subagents:
     # No subagents recorded — emit one row for the orchestrator itself
     orch  = data.get("orchestrator", {})
-    model = orch.get("model", "unknown")
+    model = model_override if model_override else orch.get("model", "unknown")
     row(
         task_label,
         agent_label,
@@ -152,10 +157,11 @@ if not subagents:
 else:
     for sa in subagents:
         totals = sa.get("totals", {})
+        model  = model_override if model_override else sa.get("model", "unknown")
         row(
             task_label,
             sa.get("agent_type", agent_label),
-            sa.get("model", "unknown"),
+            model,
             fmt_tokens(totals.get("input_tokens", 0)),
             fmt_tokens(totals.get("output_tokens", 0)),
             fmt_tokens(totals.get("cache_read_input_tokens", 0)),
@@ -168,7 +174,7 @@ PYEOF
 # Run Python to get TSV rows
 # ---------------------------------------------------------------------------
 
-ROWS="$(python3 "${PY_TMP}" "${JSON_TMP}" "${TASK}" "${AGENT_TYPE}")"
+ROWS="$(python3 "${PY_TMP}" "${JSON_TMP}" "${TASK}" "${AGENT_TYPE}" "${MODEL_OVERRIDE}")"
 
 if [[ -z "${ROWS}" ]]; then
     # Nothing to append
