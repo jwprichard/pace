@@ -37,20 +37,30 @@ No PLAN.md found. Cannot verify without a plan.
 
 ### Session UUID
 
-Read the `_Session: {uuid}_` line from STATE.md. Extract the UUID value and store
-it as `session_uuid`. Also derive the encoded project path:
+Re-detect the current session UUID by running:
+
+```bash
+bash ~/.claude/lib/pace/find-session.sh
+```
+
+Store the output as `session_uuid`. If the command fails or returns empty,
+set `session_uuid = null` and log a warning:
+```
+Warning: Could not detect session UUID — token usage will not be recorded.
+```
+
+If `session_uuid` is non-null, read the `_Session: {uuid}_` line from STATE.md.
+If the stored UUID differs from the detected one, update STATE.md's `_Session:` line
+to reflect the current session:
+- Edit the line `_Session: {old_uuid}_` → `_Session: {session_uuid}_`
+
+Also derive the encoded project path:
 
 ```bash
 printf '%s\n' "${PWD//[\/.]/-}"
 ```
 
 Store the output as `encoded_project_path`.
-
-If the `_Session:` line is missing or the UUID is empty, log a warning and skip all
-usage recording steps in this command:
-```
-Warning: No session UUID found in STATE.md — token usage will not be recorded.
-```
 
 ### Model override
 

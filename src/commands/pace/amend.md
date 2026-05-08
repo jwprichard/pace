@@ -62,20 +62,30 @@ The orchestrator's own model is never changed by this setting.
 
 ### Session UUID
 
-Read `.pace/STATE.md` (if it exists) and extract the `_Session: {uuid}_` line. Store
-the UUID value as `session_uuid`. Also derive the encoded project path:
+Re-detect the current session UUID by running:
+
+```bash
+bash ~/.claude/lib/pace/find-session.sh
+```
+
+Store the output as `session_uuid`. If the command fails or returns empty,
+set `session_uuid = null` and log a warning:
+```
+Warning: Could not detect session UUID — token usage will not be recorded.
+```
+
+If `session_uuid` is non-null and `.pace/STATE.md` exists, read the `_Session: {uuid}_`
+line from STATE.md. If the stored UUID differs from the detected one, update STATE.md's
+`_Session:` line to reflect the current session:
+- Edit the line `_Session: {old_uuid}_` → `_Session: {session_uuid}_`
+
+Also derive the encoded project path:
 
 ```bash
 printf '%s\n' "${PWD//[\/.]/-}"
 ```
 
 Store the output as `encoded_project_path`.
-
-If STATE.md does not exist yet, or the `_Session:` line is missing, or the UUID is
-empty, set `session_uuid = null`. Log a warning and skip all usage recording steps:
-```
-Warning: No session UUID found in STATE.md — token usage will not be recorded.
-```
 
 ---
 

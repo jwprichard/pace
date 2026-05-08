@@ -41,13 +41,22 @@ Check `## Status` in STATE.md:
 
 ### Session UUID and project path (for token usage)
 
-Scan the lines of STATE.md for a line matching `_Session: {uuid}_`. Extract the UUID
-value and store it as `session_uuid`.
+Re-detect the current session UUID by running:
 
-If no such line is found, set `session_uuid = null` and log a warning:
+```bash
+bash ~/.claude/lib/pace/find-session.sh
 ```
-Warning: STATE.md has no _Session_ line — token usage recording will be skipped.
+
+Store the output as `session_uuid`. If the command fails or returns empty,
+set `session_uuid = null` and log a warning:
 ```
+Warning: Could not detect session UUID — token usage recording will be skipped.
+```
+
+If `session_uuid` is non-null, read the `_Session: {uuid}_` line from STATE.md.
+If the stored UUID differs from the detected one, update STATE.md's `_Session:` line
+to reflect the current session:
+- Edit the line `_Session: {old_uuid}_` → `_Session: {session_uuid}_`
 
 Derive the encoded project path (replace every `/` and `.` with `-`):
 ```bash
