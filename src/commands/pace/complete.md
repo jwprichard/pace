@@ -148,7 +148,7 @@ model override is set, omit the 5th argument entirely:
 ```bash
 # With model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
-  bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser {model_value}
+  bash ~/.claude/lib/pace/append-usage.sh complete memory-synthesis memory-synthesiser "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
@@ -179,7 +179,7 @@ model override is set, omit the 5th argument entirely:
 ```bash
 # With model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \
-  bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist {model_value}
+  bash ~/.claude/lib/pace/append-usage.sh complete doc-refresh documentation-specialist "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | \

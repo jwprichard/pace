@@ -182,7 +182,7 @@ omit the 5th argument entirely:
 
 ```bash
 # With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix light {agent_type} {model_value}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix light {agent_type} "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix light {agent_type}
@@ -390,7 +390,7 @@ is set, omit the 5th argument entirely:
 
 ```bash
 # With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix F{N} {agent_type} {model_value}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix F{N} {agent_type} "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh fix F{N} {agent_type}

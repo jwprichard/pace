@@ -104,7 +104,7 @@ omit the 5th argument entirely:
 
 ```bash
 # With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify orchestrator verify-specialist {model_value}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify orchestrator verify-specialist "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify orchestrator verify-specialist
@@ -195,7 +195,7 @@ When a **model override** was read in Step 1, pass it as the 5th argument to
 
 ```bash
 # With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type} {model_value}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type} "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type}
@@ -219,7 +219,7 @@ omit the 5th argument entirely:
 
 ```bash
 # With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify re-verify verify-specialist {model_value}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify re-verify verify-specialist "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify re-verify verify-specialist

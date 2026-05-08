@@ -288,7 +288,7 @@ argument entirely:
 ```bash
 # With model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent} {model_value}
+  | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent} "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
@@ -327,7 +327,7 @@ When a **model override** was read in Stage 1, pass it as the 5th argument to
 ```bash
 # With model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist {model_value}
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
