@@ -20,10 +20,10 @@ from pathlib import Path
 
 PRICING = {
     "opus": {
-        "input":        0.000005,
-        "output":       0.000025,
-        "cache_read":   0.0000005,
-        "cache_write":  0.00000625,
+        "input":        0.000015,
+        "output":       0.000075,
+        "cache_read":   0.0000015,
+        "cache_write":  0.00001875,
     },
     "sonnet": {
         "input":        0.000003,
@@ -32,10 +32,10 @@ PRICING = {
         "cache_write":  0.00000375,
     },
     "haiku": {
-        "input":        0.000001,
-        "output":       0.000005,
-        "cache_read":   0.0000001,
-        "cache_write":  0.00000125,
+        "input":        0.0000008,
+        "output":       0.000004,
+        "cache_read":   0.00000008,
+        "cache_write":  0.000001,
     },
 }
 
