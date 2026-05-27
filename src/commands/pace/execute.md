@@ -104,25 +104,26 @@ The orchestrator's own model is never changed by this setting.
 
 ## Stage 2 — Load Tasks and Build Waves
 
-Parse all tasks from the `## Tasks` section of STATE.md:
+Parse all tasks from the `## Tasks` section of STATE.md. Task IDs use the
+part-prefixed alphanumeric scheme (e.g. `1a`, `1b`, `2a`):
 
 ```
-- [ ] 1: {title} — @{agent}     ← pending
-- [~] 1: {title} — @{agent}     ← in_progress (resume: treat as pending)
-- [x] 1: {title} — @{agent}     ← completed (skip)
-- [!] 1: {title} — @{agent}     ← blocked (stop — surface to user)
+- [ ] 1a: {title} — @{agent}     ← pending
+- [~] 1a: {title} — @{agent}     ← in_progress (resume: treat as pending)
+- [x] 1a: {title} — @{agent}     ← completed (skip)
+- [!] 1a: {title} — @{agent}     ← blocked (stop — surface to user)
 ```
 
-For each pending or in_progress task, read its block from PLAN.md to get the
-`**Depends on:**` field.
+For each pending or in_progress task, find its block in PLAN.md by matching
+the task ID heading (e.g. `### 1a. {title}`) to get the `**Depends on:**` field.
 
 Build an execution plan using wave scheduling:
 - **Wave 1** — tasks with `Depends on: none` (or no dependencies)
 - **Wave N** — tasks whose dependencies are all completed or in a prior wave
 
-Example: tasks 1, 2, 3 where 3 depends on 1:
-- Wave 1: tasks 1 and 2 (run in parallel)
-- Wave 2: task 3
+Example: tasks 1a, 1b, 2a where 2a depends on 1a:
+- Wave 1: tasks 1a and 1b (run in parallel)
+- Wave 2: task 2a
 
 If all tasks are already `[x]`, go to Stage 4 (complete).
 
@@ -132,10 +133,10 @@ which tasks are being skipped as already done.
 ### Register tasks in Claude's task system
 
 For every task that will run (not already `[x]`), call TaskCreate with:
-- `subject`: `Task {number}: {title} — @{agent}`
+- `subject`: `Task {id}: {title} — @{agent}`
 - `description`: the task description from PLAN.md
 
-Store the returned Claude task ID mapped to the PACE task number — you will need
+Store the returned Claude task ID mapped to the PACE task ID — you will need
 these IDs to update status throughout execution.
 
 For tasks already `[x]` (completed in a prior session), call TaskCreate then
@@ -153,8 +154,10 @@ Do this for all tasks in the wave before spawning any agents.
 
 ### 3b — Spawn all wave agents in parallel
 
-For each task in the wave, build its context from PLAN.md:
-- Task title and description
+For each task in the wave, build its context from PLAN.md. Find the task's block
+by matching the heading `### {id}. {title}` (e.g. `### 1a. Flyway migration`).
+Extract:
+- The full narrative description (everything between the metadata fields and the success criteria)
 - `**Files:**` — files likely to be affected
 - `**Agent:**` — the assigned specialist
 - `**Allowed tools:**` — tools this task is permitted to use
@@ -171,7 +174,7 @@ every Agent tool call. When no model override is set, omit the `model` parameter
 entirely so agents inherit the session default:
 
 ---
-You are executing **Task {number}: {title}** as part of a PACE plan.
+You are executing **Task {id}: {title}** as part of a PACE plan.
 
 ## Rules
 - Before modifying any file — Write, Edit, or NotebookEdit — you must Read it
@@ -207,7 +210,8 @@ Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch
 
 ## Your Assignment
 
-{task description from PLAN.md}
+{full task narrative description from PLAN.md — include the complete narrative text
+between the metadata fields and the success criteria}
 
 ## Files Likely Affected
 
@@ -263,7 +267,7 @@ For each task in the wave:
 `## Completed` with a timestamp:
 
 ```
-- [x] {number}: {title} — @{agent} _(completed {ISO timestamp})_
+- [x] {id}: {title} — @{agent} _(completed {ISO timestamp})_
 ```
 
 Call TaskUpdate for this task: set status to `completed`.
@@ -280,7 +284,7 @@ _Plan: {plan title from STATE.md}_
 Then append:
 
 ```markdown
-## Task {number}: {title} (@{agent})
+## Task {id}: {title} (@{agent})
 _Completed: {ISO timestamp}_
 
 {completion summary returned by the specialist}
@@ -297,14 +301,14 @@ argument entirely:
 ```bash
 # With model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent} "" {model_value}
+  | bash ~/.claude/lib/pace/append-usage.sh execute {id} {agent} "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute {number} {agent}
+  | bash ~/.claude/lib/pace/append-usage.sh execute {id} {agent}
 ```
 
-Where `{number}` is the task number and `{agent}` is the agent type from the task line
+Where `{id}` is the task ID (e.g. `1a`) and `{agent}` is the agent type from the task line
 in STATE.md. If the command fails, continue without interrupting the user — token
 recording is non-blocking.
 
@@ -336,14 +340,14 @@ When a **model override** was read in Stage 1, pass it as the 5th argument to
 ```bash
 # With model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist "" {model_value}
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{id} pace-documentation-specialist "" {model_value}
 
 # Without model override:
 python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{number} pace-documentation-specialist
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{id} pace-documentation-specialist
 ```
 
-Where `{number}` is the task number whose patch is being applied. If the command fails,
+Where `{id}` is the task ID whose patch is being applied. If the command fails,
 continue without interrupting the user — token recording is non-blocking.
 
 **On failure:** Edit STATE.md — change `[~]` to `[!]`. Record the error in
@@ -351,10 +355,10 @@ continue without interrupting the user — token recording is non-blocking.
 
 ```
 ## Blockers
-Task {number} ({title}): {brief description of what went wrong}
+Task {id} ({title}): {brief description of what went wrong}
 ```
 
-Call TaskUpdate for this task: set subject to `[BLOCKED] Task {number}: {title}`,
+Call TaskUpdate for this task: set subject to `[BLOCKED] Task {id}: {title}`,
 status to `completed` (Claude tasks have no blocked state).
 
 Then update `## Status` to `blocked`, stop execution (do not start the next wave),

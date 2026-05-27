@@ -277,10 +277,13 @@ I have a few questions about the parts that aren't clear yet.
 
 Skip this step if nothing meaningful was provided.
 
-### 2c — Ask targeted questions
+### 2c — Ask targeted questions (initial round)
 
-Identify 2–4 genuine unknowns — things that are unclear from the prompt and
-will materially affect how the plan is structured. Ask about these only.
+Identify **at least 3** genuine unknowns — things that are unclear from the prompt and
+will materially affect how the plan is structured. You must ask a minimum of 3 questions
+in this initial round, even if the prompt seems comprehensive. Dig into implementation
+details, edge cases, error handling, or user experience nuances to surface questions
+the user may not have considered.
 
 **Do not ask about things already answered by the prompt.**
 If the user said "add dark mode to the settings page", do not ask what they are
@@ -288,8 +291,8 @@ building. Do ask how they want the preference persisted if that is unclear.
 
 For each unknown, use AskUserQuestion with:
 - A specific, direct question about that unknown
-- 3–4 pre-filled options that represent the most likely answers given the context
-- An "Other" option for anything not covered
+- 2–3 pre-filled options that represent the most likely answers given the context
+- A final option labelled **"Let Claude decide"** with description: "I'll pick the best approach based on the codebase and context."
 
 Ask one question at a time. Wait for each answer before asking the next.
 
@@ -302,10 +305,44 @@ Ask one question at a time. Wait for each answer before asking the next.
 | Key constraint | "Any tech or pattern constraints I should know about?" |
 | Approach fork | "Two reasonable approaches here — which fits better?" |
 | Slice size | "Is this a focused change or a larger feature?" |
+| Edge case | "What should happen when X fails or is unavailable?" |
+| Migration / compatibility | "Do we need to handle existing data or can we start fresh?" |
 
 **Pre-fill options with your best inference.** The user should be able to
-confirm your guess with one click in the common case. Always include an
-"Other / something else" option.
+confirm your guess with one click in the common case.
+
+### 2c-bis — Continue or proceed
+
+After all initial questions are answered, use AskUserQuestion:
+
+```
+question: "I think I have a good understanding of what you're after. Would you like to proceed to planning, or is there more to discuss?"
+header: "Ready?"
+options:
+  - label: "Proceed to planning"
+    description: "I'm happy with the scope — go ahead and assemble the planning team."
+  - label: "Let's keep discussing"
+    description: "I have more to add, or I'd like you to dig deeper into edge cases and details."
+```
+
+**If they choose "Proceed to planning":** move to Stage 2d.
+
+**If they choose "Let's keep discussing":** run another interview round:
+
+1. Think carefully about the requirements gathered so far. Consider:
+   - Edge cases that haven't been addressed
+   - Failure modes and error handling
+   - Performance or scalability implications
+   - Security considerations
+   - Migration or backwards compatibility concerns
+   - UX edge cases (empty states, loading states, error states)
+   - Dependencies or ordering constraints that might not be obvious
+2. Ask **at least 3 more questions** following the same format as Stage 2c
+   (2–3 options + "Let Claude decide" as the final option). These questions
+   should go deeper than the initial round — probe the non-obvious aspects
+   that could derail implementation if left unresolved.
+3. After this round completes, ask the "Continue or proceed" question again
+   (repeat Stage 2c-bis). The user can keep iterating as many times as they want.
 
 ### 2d — Build requirements summary and write brief.md
 
@@ -396,9 +433,10 @@ If `model_override` is set, set the `model` parameter to `{model_override}` on e
 ---
 You are acting as a **{agent_role}** planning expert.
 
-Your job is to produce a domain-specific draft plan for the following work.
-Focus on your area of expertise only — do not try to cover every aspect.
-Another agent will cover other domains and a synthesiser will merge all drafts.
+Your job is to produce a detailed, implementation-ready draft plan for the
+following work. Focus on your area of expertise only — do not try to cover
+every aspect. Another agent will cover other domains and a synthesiser will
+merge all drafts.
 
 ## Codebase Context
 
@@ -419,11 +457,16 @@ exactly this format:
 ## Domain Focus
 One sentence describing which aspect of the work you are planning.
 
+## Key Decisions
+Bulleted list of every significant technical decision you are making or
+recommending within your domain. Each entry must include the rationale.
+- **{Topic}:** {What you decided and why — trade-offs considered, alternatives rejected, implications}
+
 ## Proposed Tasks
 
 ### Task: {short title}
 **Priority:** high | medium | low
-**Depends on:** task numbers this must wait for, or "none"
+**Depends on:** task titles this must wait for, or "none"
 **Files likely affected:** comma-separated list of specific file paths where known.
 Use "TBD" only when files genuinely cannot be determined at planning time — not as a default.
 **Service:** {service-name} (see Service field rules below)
@@ -431,6 +474,24 @@ Use "TBD" only when files genuinely cannot be determined at planning time — no
 **Allowed tools:** (optional) comma-separated restriction from the Standard Specialist Toolkit.
 Omit this field entirely to grant the full toolkit: Read, Write, Edit, NotebookEdit,
 Bash, Glob, Grep, WebSearch, WebFetch. Only specify to restrict below this default.
+
+{Detailed narrative description of this task. This is the most important part
+of the plan — write it so a technical reviewer can understand exactly what will
+change without reading the code. Include ALL of the following where applicable:
+
+- **Specific file paths** and what changes in each file
+- **Code snippets** in fenced code blocks — SQL statements, data class/interface
+  definitions, function signatures, configuration changes
+- **Tables** showing API endpoints (method, path, request/response), field
+  mappings (old name → new name), data structure layouts
+- **Step-by-step implementation logic** where the order or algorithm matters
+  (e.g. "1. Resolve serviceCode → entity, 2. Default status to submitted,
+  3. Fan-out: create one row per blockId")
+- **References to existing patterns** in the codebase that this task should follow
+  (e.g. "Follow the pattern in ContractingService.kt: UUID PK, audit columns")
+- **Explicit notes about what is NOT included** and why (e.g. "We do NOT need
+  a Requestor entity for this phase — requestor is stored as email string")}
+
 **Success criteria:**
 Success criteria must describe an observable, checkable state — not an action taken.
 
@@ -449,6 +510,13 @@ Bad criteria (do not write these):
 
 ### Task: {short title}
 ...
+
+## Verification Steps
+Concrete steps to verify the work from your domain perspective. Each step
+should specify the exact command to run, URL to check, or state to observe.
+- {e.g. "Build backend: docker compose up -d --build backend — confirm Flyway migration runs"}
+- {e.g. "curl GET /api/v1/services → response includes isSpray field"}
+- {e.g. "Navigate to /settings → dark mode toggle appears and persists on refresh"}
 
 ## Constraints & Decisions
 Any constraints, risks, or decisions that the synthesiser should factor in.
@@ -504,6 +572,9 @@ exactly this format:
 ## Domain Focus
 One sentence describing the testing perspective you are covering.
 
+## Key Decisions
+- **{Topic}:** {Testing strategy decisions and rationale}
+
 ## Proposed Tasks
 
 ### Task: [TEST] {short title describing what is being tested}
@@ -513,6 +584,13 @@ One sentence describing the testing perspective you are covering.
 **Service:** {service-name} (see Service field rules below)
 **Agent:** @agent-name-from-registry (the testing specialist who should implement this)
 **Allowed tools:** (optional) omit to grant the Standard Specialist Toolkit
+
+{Detailed description of what this test task covers, including:
+- Which features or behaviours are being tested
+- Test file paths and test case names/descriptions
+- Setup requirements (fixtures, mocks, test data)
+- Specific assertions to make}
+
 **Success criteria:**
 Success criteria must describe an observable, checkable state — not an action taken.
 
@@ -530,6 +608,10 @@ Bad criteria:
 
 ### Task: [TEST] {short title}
 ...
+
+## Verification Steps
+- {e.g. "Run full test suite: npm test — all tests pass"}
+- {e.g. "Coverage report shows >80% for affected modules"}
 
 ## Constraints & Decisions
 Any constraints, risks, or test-strategy decisions the synthesiser should factor in.
@@ -585,6 +667,14 @@ The requirements that drove these drafts are:
 
 Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
 
+The plan must follow the narrative format defined in your instructions:
+- `## Context` — substantive prose explaining current state and what changes
+- `## Key Decisions` — merged from all drafts' Key Decisions sections
+- Tasks grouped into `## Part {N}: {Name}` sections with part-prefixed IDs (`1a`, `1b`, `2a`, etc.)
+- Each task must have a detailed narrative description with code snippets, SQL, data structures, and step-by-step logic
+- `## Implementation Order` — numbered execution sequence referencing task IDs
+- `## Verification` — concrete verification steps merged from all drafts
+
 Preserve `**Service:**` annotations from draft plans during merge. If two drafts propose the same task with different service annotations, keep the annotation that matches the `## Services` table in PROJECT.md.
 
 {If `roadmap_phase` is set, append:}
@@ -621,11 +711,12 @@ or soften any of them.
 2. **Implementation tasks must declare their test dependency.** For every
    implementation task that has a corresponding `[TEST]` task (matched by the
    feature or behaviour being implemented), you must add the `[TEST]` task's
-   number to the `Depends on:` field of the implementation task.
+   ID to the `Depends on:` field of the implementation task.
 
-3. **Enforce red-green ordering.** No implementation task may carry a lower
-   task number than its paired `[TEST]` task. If a `[TEST]` task is task N,
-   its paired implementation task must be task N+1 or higher.
+3. **Enforce red-green ordering.** No implementation task may appear before
+   its paired `[TEST]` task in the Implementation Order. If a `[TEST]` task
+   is at position M in the Implementation Order, its paired implementation
+   task must be at position M+1 or later.
 
 4. **Flag untested implementation tasks.** If an implementation task has no
    corresponding `[TEST]` task, do not silently include it. Add a `Notes:`
@@ -694,7 +785,8 @@ options:
 ```
 
 **If they choose Approve:**
-Write `.pace/STATE.md` using this format:
+Write `.pace/STATE.md` using this format. Task IDs use the part-prefixed
+alphanumeric scheme from PLAN.md (e.g. `1a`, `1b`, `2a`):
 
 ```markdown
 # STATE
@@ -706,10 +798,10 @@ _Session: {session_uuid}_
 in_progress
 
 ## Tasks
-- [ ] 1: {task title} — @{agent}
-- [ ] 2: {task title} — @{agent}
-- [ ] 3: {task title} — @{agent}
-- [ ] 4: {task title} — @{agent}
+- [ ] 1a: {task title} — @{agent}
+- [ ] 1b: {task title} — @{agent}
+- [ ] 2a: {task title} — @{agent}
+- [ ] 2b: {task title} — @{agent}
 
 ## Completed
 (none yet)

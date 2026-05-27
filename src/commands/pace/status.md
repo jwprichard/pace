@@ -64,11 +64,11 @@ Present the status in this format:
 
 {completed count}/{total count} tasks complete
 
-  [x] 1: {title} — @{agent}
-  [x] 2: {title} — @{agent}
-  [~] 3: {title} — @{agent}      <- in progress
-  [ ] 4: {title} — @{agent}
-  [!] 5: {title} — @{agent}      <- blocked
+  [x] 1a: {title} — @{agent}
+  [x] 1b: {title} — @{agent}
+  [~] 2a: {title} — @{agent}      <- in progress
+  [ ] 2b: {title} — @{agent}
+  [!] 3a: {title} — @{agent}      <- blocked
 
 {if blockers exist:}
 ### Blockers

@@ -202,11 +202,12 @@ Grep for terms from the amendment description in the codebase to surface relevan
 Use 2–4 targeted searches based on keywords. Collect up to 10 most relevant
 file paths and their matching lines.
 
-### L5 — Determine task number
+### L5 — Determine amendment number
 
-Read PLAN.md and STATE.md to find the highest existing task number (including any
-fixes — e.g. if the last entry is Fix 3, the next number is 4; if the last task
-is Task 6, the next number is 7). The amendment gets the next sequential number.
+Read PLAN.md and STATE.md to find the highest existing amendment number
+(e.g. if the last amendment is Amendment 2, the next is 3; if no amendments
+exist, start at 1). Amendment numbers are sequential within the `A` prefix
+and are independent of the main plan task IDs.
 
 ### L6 — Dispatch
 
@@ -382,8 +383,10 @@ ask the same follow-up again. Repeat until they confirm "That's everything."
 
 ### Stage 5 — Build amendment tasks
 
-Determine the next task number. Read PLAN.md — find the highest existing task
-or fix number and continue from there.
+Determine the next amendment number. Read PLAN.md — find the highest existing
+amendment number in the `## Amendments` section and continue from there. If no
+amendments exist, start at 1. Amendment numbers are sequential within the `A`
+prefix and are independent of the main plan task IDs.
 
 For each addition the user described:
 

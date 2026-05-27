@@ -179,7 +179,7 @@ You are fixing a verification failure as @{agent}.
 
 ## Original Task Context
 
-Read `.pace/PLAN.md` — Task {N}: {title} — for full context on what this task was meant to deliver.
+Read `.pace/PLAN.md` — find the task block matching `### {id}. {title}` — for full context on what this task was meant to deliver.
 
 ## Your Job
 

@@ -71,11 +71,11 @@ Return a verdict in exactly this format:
 ```
 ## Verification Report
 
-### Task {N}: {title}
+### Task {id}: {title}
 - [x] {criterion} — PASSED: {evidence — file:line or command output snippet}
 - [!] {criterion} — FAILED: expected {X}, found {Y}
 
-### Task {N}: {title}
+### Task {id}: {title}
 - [x] {criterion} — PASSED: {evidence}
 
 ---
@@ -87,8 +87,11 @@ VERIFIED   ← all criteria passed
 NEEDS WORK ← one or more criteria failed
 
 ### Failing criteria:
-- Task {N}: {criterion} — {brief restatement of what's wrong}
+- Task {id}: {criterion} — {brief restatement of what's wrong}
 ```
+
+Task IDs use the part-prefixed alphanumeric scheme from PLAN.md (e.g. `1a`, `1b`, `2a`).
+Tasks in PLAN.md are structured as `### {id}. {title}` within `## Part {N}: {Name}` sections.
 
 ### Step 4 — Write VERIFICATION.md
 
@@ -103,7 +106,7 @@ NEEDS WORK
 
 ## Failing Tasks
 
-### Task {N}: {title}
+### Task {id}: {title}
 **Agent:** @{agent from PLAN.md}
 **Files:** {files from PLAN.md}
 **Allowed tools:** {allowed tools from PLAN.md}
@@ -117,11 +120,11 @@ NEEDS WORK
   **Expected:** ...
   **Found:** ...
 
-### Task {N}: {title}
+### Task {id}: {title}
 ...
 
 ## Passing Tasks (summary)
-- Task {N}: {title} — all {X} criteria passed
+- Task {id}: {title} — all {X} criteria passed
 ```
 
 Include every detail the fix agent will need — agent name, files, tools, and the exact

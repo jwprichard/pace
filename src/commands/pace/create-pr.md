@@ -139,12 +139,13 @@ research sections down to a bullet summary.}
 
 ## What was delivered
 
-{From PLAN.md objective + STATE.md task list. Show each task with its status
-marker and agent:}
+{From PLAN.md Context section + STATE.md task list. Show each task with its
+status marker, part-prefixed ID, and agent:}
 
-- [x] Task 1: {title} — @{agent}
-- [x] Task 2: {title} — @{agent}
-- [ ] Task 3: {title} — @{agent} _(incomplete)_
+- [x] 1a: {title} — @{agent}
+- [x] 1b: {title} — @{agent}
+- [x] 2a: {title} — @{agent}
+- [ ] 2b: {title} — @{agent} _(incomplete)_
 
 {If episode.md exists, add a brief narrative summary (3-5 sentences max)
 of what was actually built, synthesised from the episodic memory. Do not
