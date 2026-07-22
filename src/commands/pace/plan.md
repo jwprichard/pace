@@ -1,6 +1,6 @@
 ---
 name: pace:plan
-description: Interview the user, assemble a domain planning team, and produce PLAN.md
+description: Interview the user, then produce PLAN.md via a single planner agent
 argument-hint: "[--tdd] [--research] [--abandon] [topic]"
 allowed-tools:
   - Read
@@ -12,18 +12,17 @@ allowed-tools:
 ---
 
 <objective>
-Conduct a structured planning interview, select the right domain expert agents
-based on the work described, run them in parallel to produce draft plans, then
-hand all drafts to the pace-synthesiser to produce a single coherent PLAN.md.
+Conduct a structured planning interview, compile the requirements into a brief,
+then hand the brief to a single pace-planner agent to produce PLAN.md.
 
-You are a coordinator. You do not write the plan yourself — you assemble the
-team and synthesise their output.
+You are a coordinator. You do not write the plan yourself — you run the
+interview and dispatch the planner.
 </objective>
 
 <process>
 
 > **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
-> This applies to all agent spawns without exception — planners, synthesiser, and any others.
+> This applies to all agent spawns without exception — the planner, research agent, and any others.
 
 ## Stage 0 — Parse Flags
 
@@ -135,7 +134,6 @@ Check whether `.pace/STATE.md` exists.
     rm -f .pace/STATE.md
     rm -f .pace/memory/episode.md
     rm -rf .pace/requirements/
-    rm -rf .pace/drafts/
     ```
     Then proceed to Check 4.
     If **No**: stop. No changes made.
@@ -169,9 +167,9 @@ If it exists:
 ### Check 4: Clear plan-specific artifacts
 
 ```bash
-rm -rf .pace/requirements/ .pace/drafts/
+rm -rf .pace/requirements/
 rm -f .pace/usage.md
-mkdir -p .pace/requirements/ .pace/drafts/
+mkdir -p .pace/requirements/
 ```
 
 ### Capture session UUID
@@ -183,7 +181,7 @@ bash ~/.claude/lib/pace/find-session.sh
 ```
 
 If the command exits non-zero or returns an empty string, set `session_uuid = unknown`.
-Store `session_uuid` for use in Stage 6 (STATE.md) and token usage recording.
+Store `session_uuid` for use in Stage 5 (STATE.md) and token usage recording.
 
 ## Stage 1.5 — Research
 
@@ -320,7 +318,7 @@ question: "I think I have a good understanding of what you're after. Would you l
 header: "Ready?"
 options:
   - label: "Proceed to planning"
-    description: "I'm happy with the scope — go ahead and assemble the planning team."
+    description: "I'm happy with the scope — go ahead and produce the plan."
   - label: "Let's keep discussing"
     description: "I have more to add, or I'd like you to dig deeper into edge cases and details."
 ```
@@ -365,7 +363,7 @@ Once all questions are answered, compile everything into a structured requiremen
 {small / medium / large; if large, the first slice being planned}
 
 ## Assumptions
-{things inferred, not stated — so planners know what to flag if wrong}
+{things inferred, not stated — so the planner knows what to flag if wrong}
 ```
 
 If `research_mode = true`, append to this block:
@@ -380,63 +378,20 @@ Write the complete block (including research section if present) to `.pace/requi
 The `{requirements}` variable used in all subsequent stages means: the contents of
 `.pace/requirements/brief.md`. Read from file — do not hold in context.
 
-## Stage 3 — Agent Selection
-
-Based on the interview answers, select **2-3 domain planning agents** from the
-registry. Use this as a guide:
-
-| Work type | Planning team |
-|---|---|
-| Backend / API | `@Software Architect`, `@Backend Architect` |
-| Frontend / UI | `@Software Architect`, `@UX Architect` |
-| Full-stack feature | `@Software Architect`, `@Backend Architect`, `@UX Architect` |
-| Design / UX | `@UX Architect`, `@UI Designer` |
-| Infrastructure | `@Software Architect`, `@DevOps Automator` |
-| Marketing / content | `@Product Manager`, `@Content Creator` |
-| Product feature | `@Software Architect`, `@Product Manager` |
-
-`@Software Architect` should be on the team for any technical work.
-Load the relevant Tier 2 division files from `.pace/agents/` to confirm the
-exact agent names before spawning.
-
-**TDD mode — testing peer selection:**
-If `tdd_mode` is `true`, add exactly one testing-division peer planner to the
-team alongside the 2–3 domain agents selected above. Use this preference order:
-
-1. `@Reality Checker` — preferred for behavioural or integration-heavy work
-   (i.e. the requirements describe end-to-end flows, user-facing behaviour, or
-   cross-service interactions)
-2. `@Test Results Analyzer` — preferred for analysis-heavy work (i.e. the
-   requirements are primarily about data pipelines, reporting, metrics, or
-   understanding existing test output)
-3. `@API Tester` — preferred for API-focused work (i.e. the primary deliverable
-   is a new or changed API surface — endpoints, contracts, or schemas)
-
-Select the first agent in the list whose description matches the work; if none
-fits clearly, default to `@Reality Checker`. Load the testing division Tier 2
-file from `.pace/agents/` to confirm the exact agent name before spawning.
-
-If `tdd_mode` is `false`, do not add a testing peer — Stage 3 behaviour is
-identical to its non-TDD form and no testing agent is selected here.
-
-Tell the user which agents you are assembling and why. When TDD mode is active,
-explicitly name the testing peer and explain which preference criterion matched.
-
-## Stage 4 — Parallel Draft Planning
+## Stage 3 — Plan
 
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
-Spawn each selected domain agent as a parallel Agent tool call with the following prompt
-(substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`).
-If `model_override` is set, set the `model` parameter to `{model_override}` on each Agent tool call:
+Tell the user you are dispatching the planner, then spawn the `pace-planner`
+agent using the Agent tool with the following prompt. If `model_override` is set,
+set the `model` parameter to `{model_override}` on the Agent tool call:
 
 ---
-You are acting as a **{agent_role}** planning expert.
+Produce a complete PLAN.md at `.pace/PLAN.md` for the following work, following
+the format and process defined in your instructions.
 
-Your job is to produce a detailed, implementation-ready draft plan for the
-following work. Focus on your area of expertise only — do not try to cover
-every aspect. Another agent will cover other domains and a synthesiser will
-merge all drafts.
+Read `.pace/AGENT-REGISTRY.md` and the relevant Tier 2 division files in
+`.pace/agents/` to select and validate the agent assigned to each task.
 
 ## Codebase Context
 
@@ -446,236 +401,17 @@ merge all drafts.
 
 {contents of .pace/requirements/brief.md}
 
-## Your Task
+{If `tdd_mode` is `true`, append:}
 
-Produce a draft plan and write it to `.pace/drafts/{agent_name}.md` using
-exactly this format:
+## TDD Mode
 
-```markdown
-# Draft Plan — {agent_role}
+TDD mode is enabled for this plan. Apply the TDD rules from your instructions:
+plan a `[TEST]` task per expected feature, make implementation tasks depend on
+their paired `[TEST]` tasks, enforce red-green ordering in the Implementation
+Order, flag untested implementation tasks, and write the `_TDD: enabled_`
+header line.
 
-## Domain Focus
-One sentence describing which aspect of the work you are planning.
-
-## Key Decisions
-Bulleted list of every significant technical decision you are making or
-recommending within your domain. Each entry must include the rationale.
-- **{Topic}:** {What you decided and why — trade-offs considered, alternatives rejected, implications}
-
-## Proposed Tasks
-
-### Task: {short title}
-**Priority:** high | medium | low
-**Depends on:** task titles this must wait for, or "none"
-**Files likely affected:** comma-separated list of specific file paths where known.
-Use "TBD" only when files genuinely cannot be determined at planning time — not as a default.
-**Service:** {service-name} (see Service field rules below)
-**Agent:** @agent-name-from-registry (the specialist who should implement this)
-**Allowed tools:** (optional) comma-separated restriction from the Standard Specialist Toolkit.
-Omit this field entirely to grant the full toolkit: Read, Write, Edit, NotebookEdit,
-Bash, Glob, Grep, WebSearch, WebFetch. Only specify to restrict below this default.
-
-{Detailed narrative description of this task. This is the most important part
-of the plan — write it so a technical reviewer can understand exactly what will
-change without reading the code. Include ALL of the following where applicable:
-
-- **Specific file paths** and what changes in each file
-- **Code snippets** in fenced code blocks — SQL statements, data class/interface
-  definitions, function signatures, configuration changes
-- **Tables** showing API endpoints (method, path, request/response), field
-  mappings (old name → new name), data structure layouts
-- **Step-by-step implementation logic** where the order or algorithm matters
-  (e.g. "1. Resolve serviceCode → entity, 2. Default status to submitted,
-  3. Fan-out: create one row per blockId")
-- **References to existing patterns** in the codebase that this task should follow
-  (e.g. "Follow the pattern in ContractingService.kt: UUID PK, audit columns")
-- **Explicit notes about what is NOT included** and why (e.g. "We do NOT need
-  a Requestor entity for this phase — requestor is stored as email string")}
-
-**Success criteria:**
-Success criteria must describe an observable, checkable state — not an action taken.
-
-Good criteria:
-  ✓ `GET /api/users/me` returns 200 with `{id, email, name}` when authenticated
-  ✓ `src/models/user.ts` exports a `User` interface with fields: id, email, createdAt
-  ✓ Running `npm test` exits 0 with no failing tests mentioning "auth"
-
-Bad criteria (do not write these):
-  ✗ "Auth middleware is implemented"
-  ✗ "Tests pass"
-  ✗ "API endpoint is added"
-
-- {observable outcome 1}
-- {observable outcome 2}
-
-### Task: {short title}
-...
-
-## Verification Steps
-Concrete steps to verify the work from your domain perspective. Each step
-should specify the exact command to run, URL to check, or state to observe.
-- {e.g. "Build backend: docker compose up -d --build backend — confirm Flyway migration runs"}
-- {e.g. "curl GET /api/v1/services → response includes isSpray field"}
-- {e.g. "Navigate to /settings → dark mode toggle appears and persists on refresh"}
-
-## Constraints & Decisions
-Any constraints, risks, or decisions that the synthesiser should factor in.
-
-## Notes
-Anything else relevant from your domain perspective.
-```
-
-**Service field rules:**
-If the Codebase Context contains a `## Services` section, add a `**Service:** {service-name}`
-field to each task where the service can be determined from the files affected. The service
-name must match an entry from the `## Services` table in PROJECT.md — planners do not invent
-service names. Omit the `**Service:**` field entirely when the project has no `## Services`
-section or when the service cannot be determined for a specific task.
-
-Propose as many tasks as the work genuinely requires. Do not pad with unnecessary tasks.
-Only include tasks within your domain expertise.
-Mark dependencies accurately — independent tasks will be run in parallel.
----
-
-**TDD mode — testing peer planner:**
-If `tdd_mode` is `true`, spawn the selected testing peer agent (chosen in
-Stage 3) as an additional parallel Agent tool call alongside the domain planners above,
-using the prompt below (substitute `{testing_agent_role}`).
-If `model_override` is set, set the `model` parameter to `{model_override}` on the Agent tool call.
-This agent runs in parallel with the domain planner agents — do not wait for
-the domain planners to finish before spawning it.
-
----
-You are acting as a **{testing_agent_role}** testing planning expert.
-
-Your job is to propose test tasks that cover the expected features of the
-following work. You are writing a test plan only — you must not plan
-implementation tasks. Implementation is handled by separate domain planners
-and is explicitly out of your scope.
-
-## Codebase Context
-
-{full contents of .pace/PROJECT.md}
-
-## Requirements
-
-{contents of .pace/requirements/brief.md}
-
-## Your Task
-
-Produce a test draft plan and write it to `.pace/drafts/tdd-planner.md` using
-exactly this format:
-
-```markdown
-# Draft Plan — Testing ({testing_agent_role})
-
-## Domain Focus
-One sentence describing the testing perspective you are covering.
-
-## Key Decisions
-- **{Topic}:** {Testing strategy decisions and rationale}
-
-## Proposed Tasks
-
-### Task: [TEST] {short title describing what is being tested}
-**Priority:** high | medium | low
-**Depends on:** none
-**Files likely affected:** comma-separated list of specific file paths, or "TBD" only if genuinely unknown
-**Service:** {service-name} (see Service field rules below)
-**Agent:** @agent-name-from-registry (the testing specialist who should implement this)
-**Allowed tools:** (optional) omit to grant the Standard Specialist Toolkit
-
-{Detailed description of what this test task covers, including:
-- Which features or behaviours are being tested
-- Test file paths and test case names/descriptions
-- Setup requirements (fixtures, mocks, test data)
-- Specific assertions to make}
-
-**Success criteria:**
-Success criteria must describe an observable, checkable state — not an action taken.
-
-Good criteria:
-  ✓ Running `npm test -- --testPathPattern=auth` exits 0
-  ✓ `tests/auth.test.ts` contains a test case named "returns 401 when token is missing"
-  ✓ Coverage report shows >80% line coverage for `src/auth/`
-
-Bad criteria:
-  ✗ "Tests are written"
-  ✗ "Auth is tested"
-
-- {observable outcome 1}
-- {observable outcome 2}
-
-### Task: [TEST] {short title}
-...
-
-## Verification Steps
-- {e.g. "Run full test suite: npm test — all tests pass"}
-- {e.g. "Coverage report shows >80% for affected modules"}
-
-## Constraints & Decisions
-Any constraints, risks, or test-strategy decisions the synthesiser should factor in.
-
-## Notes
-Anything else relevant from a testing perspective.
-```
-
-**Service field rules:**
-If the Codebase Context contains a `## Services` section, add a `**Service:** {service-name}`
-field to each task where the service can be determined from the files affected. The service
-name must match an entry from the `## Services` table in PROJECT.md — planners do not invent
-service names. Omit the `**Service:**` field entirely when the project has no `## Services`
-section or when the service cannot be determined for a specific task.
-
-Rules you must follow:
-- Propose exactly one test task per expected feature described in the requirements.
-- Every task title must begin with the prefix `[TEST]`.
-- Every task must have `Depends on: none` — test tasks are not sequenced on
-  each other or on implementation tasks here; the synthesiser will handle
-  ordering in the final plan.
-- Do not plan implementation tasks. Implementation is out of scope for this
-  draft. Limit your tasks strictly to verification, testing, and quality
-  assurance activities.
----
-
-If `tdd_mode` is `false`, do not spawn the testing peer planner. Stage 4
-spawns only the domain planners described above — no change.
-
-Wait for all parallel Agent tool calls (domain planners and, when applicable, the testing
-peer planner) to complete before proceeding to Stage 5.
-
-## Stage 5 — Synthesis
-
-Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
-
-Once all draft files exist in `.pace/drafts/`, spawn the `pace-synthesiser`
-agent using the Agent tool with the following prompt. If `model_override` is set, include
-`model: {model_override}` in the Agent tool call:
-
----
-Read all draft plan files in `.pace/drafts/`.
-Read `.pace/AGENT-REGISTRY.md` and the relevant Tier 2 division files to
-validate agent names.
-
-## Codebase Context
-
-{full contents of .pace/PROJECT.md}
-
-The requirements that drove these drafts are:
-
-{contents of .pace/requirements/brief.md}
-
-Synthesise all drafts into a single PLAN.md at `.pace/PLAN.md`.
-
-The plan must follow the narrative format defined in your instructions:
-- `## Context` — substantive prose explaining current state and what changes
-- `## Key Decisions` — merged from all drafts' Key Decisions sections
-- Tasks grouped into `## Part {N}: {Name}` sections with part-prefixed IDs (`1a`, `1b`, `2a`, etc.)
-- Each task must have a detailed narrative description with code snippets, SQL, data structures, and step-by-step logic
-- `## Implementation Order` — numbered execution sequence referencing task IDs
-- `## Verification` — concrete verification steps merged from all drafts
-
-Preserve `**Service:**` annotations from draft plans during merge. If two drafts propose the same task with different service annotations, keep the annotation that matches the `## Services` table in PROJECT.md.
+{End of tdd_mode conditional block.}
 
 {If `roadmap_phase` is set, append:}
 
@@ -691,58 +427,11 @@ _Phase: {roadmap_phase}_
 {End of roadmap_phase conditional block.}
 ---
 
-**TDD mode — synthesiser compliance block:**
-If `tdd_mode` is `true`, append the following block to the synthesiser prompt
-above (after the final line "Synthesise all drafts into a single PLAN.md at
-`.pace/PLAN.md`."):
+Wait for the planner to complete.
 
----
-## TDD Compliance Rules
+## Stage 4 — Record Planning Phase Token Usage
 
-This plan was generated in TDD mode. You must apply all four rules below when
-merging the draft plans into PLAN.md. These rules are mandatory — do not skip
-or soften any of them.
-
-1. **[TEST] tasks are required prerequisites.** Treat every task whose title
-   begins with `[TEST]` (from `.pace/drafts/tdd-planner.md`) as a required
-   prerequisite, not an optional addition. Every `[TEST]` task must appear in
-   the final PLAN.md.
-
-2. **Implementation tasks must declare their test dependency.** For every
-   implementation task that has a corresponding `[TEST]` task (matched by the
-   feature or behaviour being implemented), you must add the `[TEST]` task's
-   ID to the `Depends on:` field of the implementation task.
-
-3. **Enforce red-green ordering.** No implementation task may appear before
-   its paired `[TEST]` task in the Implementation Order. If a `[TEST]` task
-   is at position M in the Implementation Order, its paired implementation
-   task must be at position M+1 or later.
-
-4. **Flag untested implementation tasks.** If an implementation task has no
-   corresponding `[TEST]` task, do not silently include it. Add a `Notes:`
-   field to that task containing exactly: `[TDD VIOLATION] No test task was
-   proposed for this implementation task.`
-
-## TDD Header in PLAN.md
-
-After you write the `_Generated: {timestamp}_` line in PLAN.md, add the
-following line immediately after it:
-
-```
-_TDD: enabled_
-```
-
-This marker allows downstream commands (`/pace:execute`, `/pace:verify`, etc.)
-to detect TDD mode by reading PLAN.md without re-parsing the original arguments.
----
-
-If `tdd_mode` is `false`, the Stage 5 prompt is identical to the base prompt
-above — no TDD compliance block is appended and no `_TDD: enabled_` header
-is written.
-
-## Stage 5b — Record Planning Phase Token Usage
-
-Once the synthesiser completes, record token usage for the planning phase.
+Once the planner completes, record token usage for the planning phase.
 
 Run the following bash commands in order:
 
@@ -763,11 +452,11 @@ Run the following bash commands in order:
    printf '%s' "{usage_json}" | bash ~/.claude/lib/pace/append-usage.sh plan orchestrator plan-orchestrator
    ```
 
-If any of these commands fail, continue to Stage 6 without interrupting the user — token recording is non-blocking.
+If any of these commands fail, continue to Stage 5 without interrupting the user — token recording is non-blocking.
 
-## Stage 6 — Approval
+## Stage 5 — Approval
 
-Once the synthesiser completes, read `.pace/PLAN.md` and present it to the
+Once the planner completes, read `.pace/PLAN.md` and present it to the
 user in full.
 
 Then use the AskUserQuestion tool to ask:
@@ -786,7 +475,8 @@ options:
 
 **If they choose Approve:**
 Write `.pace/STATE.md` using this format. Task IDs use the part-prefixed
-alphanumeric scheme from PLAN.md (e.g. `1a`, `1b`, `2a`):
+alphanumeric scheme from PLAN.md (e.g. `1a`, `1b`, `2a`). List tasks in
+Implementation Order:
 
 ```markdown
 # STATE
@@ -854,7 +544,7 @@ deleted when `/pace:complete` runs. They are plan-scoped, not persistent.
 
 **Standard Specialist Toolkit:** The default tool set for all specialist agents is:
 `Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch`.
-Planners should omit `Allowed tools:` from tasks unless they have a specific reason
+The planner should omit `Allowed tools:` from tasks unless it has a specific reason
 to restrict below this default. `Agent`, `TaskCreate`, `TaskUpdate`, and `AskUserQuestion`
 are orchestrator-only tools and are never granted to specialist agents.
 
@@ -862,7 +552,7 @@ are orchestrator-only tools and are never granted to specialist agents.
 - `episode.md` — what was built in the current execution (written by execute, cleared by complete)
 - `semantic.md` — cross-plan institutional knowledge (written by complete, never cleared)
 
-Planners read semantic memory (via the orchestrator in execute). Specialists read
+The orchestrator reads semantic memory during execute. Specialists read
 episodic memory only — they do not read or write to the semantic layer.
 
 </process>

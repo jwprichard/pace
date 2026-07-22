@@ -441,15 +441,18 @@ Dispatching now...
 
 ### Stage 7 — Dispatch amendment agents
 
-For each amendment task, build wave scheduling based on dependencies:
-- Amendments with `Depends on: none` and no dependency on pending existing tasks
-  → dispatch in parallel
+Sort the amendment tasks by dependency:
+- Amendments with `Depends on: none`, or whose referenced tasks are all `[x]`
+  → dispatchable
 - Amendments that depend on pending existing tasks → cannot dispatch yet; leave
   them as `[ ]` in STATE.md and tell the user they will run on the next
   `/pace:execute` or `/pace:resume`
 
-For dispatchable amendments, spawn the assigned agent as a parallel Agent tool call with
+Dispatch the dispatchable amendments **one at a time, in amendment-number order**.
+For each, spawn the assigned agent using the Agent tool with
 `dangerouslySkipPermissions: true` and this prompt (substitute all placeholders).
+Wait for the agent to complete and record its outcome (Stage 8) before
+dispatching the next amendment.
 
 If a **model override** was read in Stage 0, set the `model` parameter to `{model_value}` on
 every Agent tool call. When no model override is set, omit the `model` parameter
@@ -491,12 +494,10 @@ You are executing **Amendment {N}: {title}** as part of a PACE plan.
 {success criteria from PLAN.md amendment block}
 ---
 
-Wait for all dispatched amendment agents to complete.
-
 ### Record amendment agent usage
 
-If `session_uuid` is available, record each amendment agent's token usage in order. For
-each amendment task A{N} dispatched in this stage, run the following. When a **model
+After each amendment agent completes, if `session_uuid` is available, record its token
+usage. For the amendment task A{N} just completed, run the following. When a **model
 override** was read in Stage 0, pass it as the 5th argument to `append-usage.sh`. When
 no model override is set, omit the 5th argument entirely:
 
@@ -513,7 +514,7 @@ amendment task. If these commands fail, continue without interrupting the user.
 
 ### Stage 8 — Commit and record outcomes
 
-For each dispatched amendment task, process in task-number order:
+For each dispatched amendment task, immediately after its agent completes:
 
 **Commit changes:**
 
@@ -561,20 +562,6 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Spawn `pace-documentation-specialist` as a fire-and-forget Agent tool call in patch mode.
-If a **model override** was read in Stage 0, set the `model` parameter to `{model_value}` on
-this Agent tool call. When no model override is set, omit the `model` parameter
-entirely:
-
-```
-Patch mode. Amendment just completed.
-Task: Amendment {N} — {title}
-Agent: {agent}
-Files: {files from PLAN.md}
-Summary: {completion summary returned by the specialist}
-Update .pace/PROJECT.md to reflect any changes introduced by this amendment.
-```
-
 **On failure:** Edit STATE.md — change `[ ]` to `[!]`. Record the error in
 `## Blockers`:
 
@@ -587,6 +574,21 @@ Set `## Status` to `blocked` and tell the user which amendment failed and why.
 ### Stage 9 — Complete
 
 When all dispatched amendment tasks are `[x]`:
+
+Spawn `pace-documentation-specialist` using the Agent tool in patch mode, once for
+all amendments applied in this run. If a **model override** was read in Stage 0, set
+the `model` parameter to `{model_value}` on this Agent tool call. When no model
+override is set, omit the `model` parameter entirely:
+
+```
+Patch mode. An amendment run just completed.
+Amendments applied:
+{for each completed amendment: "Amendment {N} — {title} (@{agent}): {one-line summary}"}
+
+Update .pace/PROJECT.md to reflect any changes introduced by these amendments.
+```
+
+Wait for it to complete.
 
 Check whether any amendment tasks were deferred (dependencies on pending existing tasks).
 

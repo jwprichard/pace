@@ -46,8 +46,8 @@ flowchart TD
 flowchart LR
     subgraph pace-agents["PACE Agents (agents/pace/)"]
         analyst["pace-codebase-analyst\nGenerates PROJECT.md"]
-        synthesiser["pace-synthesiser\nMerges draft plans → PLAN.md"]
-        docspec["pace-documentation-specialist\nPatches PROJECT.md after tasks"]
+        planner["pace-planner\nWrites PLAN.md from the brief"]
+        docspec["pace-documentation-specialist\nPatches PROJECT.md after execution"]
         verifier["pace-verification-specialist\nChecks work vs success criteria"]
     end
 
@@ -59,40 +59,40 @@ flowchart LR
     end
 
     analyst -->|writes| project[".pace/PROJECT.md"]
-    synthesiser -->|writes| plan[".pace/PLAN.md"]
+    planner -->|writes| plan[".pace/PLAN.md"]
     docspec -->|patches| project
     verifier -->|reads| plan
 
-    fe & be & dv & etc -->|report back to orchestrator| docspec
+    fe & be & dv & etc -->|report back to dispatcher| docspec
 ```
 
-## Execute Wave Flow
+## Execute Task Flow
 
 ```mermaid
 flowchart TD
     start(["pace:execute"]) --> preflight["Pre-flight\nRead PLAN.md + STATE.md"]
     preflight --> stale{"PROJECT.md\nstale?"}
     stale -->|yes| warn["Warn user\n(commits since last scan)"]
-    stale -->|no| waves
-    warn --> waves
+    stale -->|no| order
+    warn --> order
 
-    waves["Build wave schedule\n(dependency graph)"]
-    waves --> wave1
+    order["Build run order\n(PLAN.md Implementation Order)"]
+    order --> task1
 
-    subgraph wave1["Wave N"]
-        mark["Mark tasks in_progress\n(STATE.md + Claude task UI)"]
-        spawn["Spawn specialist agents\nin parallel"]
+    subgraph task1["Task N"]
+        mark["Mark task in_progress\n(STATE.md + Claude task UI)"]
+        spawn["Spawn the assigned\nspecialist agent"]
         mark --> spawn
-        spawn --> outcomes["Record outcomes per task\n(STATE.md + Claude task UI)"]
-        outcomes --> commit["Per-task commit\n(if changes exist)"]
-        commit --> doc["pace-documentation-specialist\npatches PROJECT.md"]
+        spawn --> commit["Commit the task's changes\n(if changes exist)"]
+        commit --> outcomes["Record the outcome\n(STATE.md + Claude task UI)"]
     end
 
-    doc --> more{"More\nwaves?"}
-    more -->|yes| wave1
-    more -->|no| done["Mark complete\nRun /pace:verify"]
+    outcomes --> more{"More\ntasks?"}
+    more -->|yes| task1
+    more -->|no| doc["pace-documentation-specialist\npatches PROJECT.md (once)"]
+    doc --> done["Mark complete\nRun /pace:verify"]
 
-    outcomes -->|any failure| blocked["Mark blocked\nSurface to user\n→ /pace:resume"]
+    outcomes -->|failure| blocked["Mark blocked\nSurface to user\n→ /pace:resume"]
 ```
 
 ## Data Flow
@@ -126,7 +126,7 @@ flowchart LR
     user -->|"/pace:plan"| plan
     user -->|"/pace:plan"| brief
     plan -->|approved| state
-    project & registry & plan & state -->|context| orchestrator["Orchestrator"]
+    project & registry & plan & state -->|context| orchestrator["Dispatcher"]
     settings -->|plan-model / execute-model| orchestrator
     orchestrator -->|tailored brief| specialists["Specialist Agents"]
     specialists -->|completion summary| docspec["pace-documentation-specialist"]
@@ -153,7 +153,7 @@ flowchart LR
     end
 
     subgraph lifecycle["Lifecycle commands that record usage"]
-        execphase["/pace:execute\n(per wave)"]
+        execphase["/pace:execute\n(per task)"]
         verifyphase["/pace:verify"]
         fixphase["/pace:fix"]
         amendphase["/pace:amend"]
@@ -169,12 +169,12 @@ flowchart LR
     clear --> append
     agents --> append
     execphase & verifyphase & fixphase & amendphase & completephase --> append
-    append -->|per wave / per phase| append
+    append -->|per task / per phase| append
     append --> usage
     append --> pr
 ```
 
-**Token tracking lifecycle**: At plan time, `find-session.sh` identifies the current Claude Code session UUID from the process tree and writes it to `STATE.md`. `/pace:plan` also clears `.pace/usage.md` so each plan starts with a fresh ledger. After each agent completes, `append-usage.sh` calls `token-usage.py aggregate` to parse the session's JSONL file, deduplicate entries already recorded, and append a new phase row to `usage.md`. The five lifecycle commands that record usage are: `/pace:execute` (per wave), `/pace:verify`, `/pace:fix`, `/pace:amend`, and `/pace:complete` — the last of which records two sub-phases: `memory-synthesis` (the memory-synthesiser agent) and `doc-refresh` (the documentation-specialist full-rescan). `/pace:usage` reads the accumulated `usage.md` and pipes it through `token-usage.py format detail` to render a per-task breakdown table. `/pace:create-pr` pipes the same file through `token-usage.py format summary` to embed a cost summary in the PR body. `/pace:complete` preserves `usage.md` during cleanup so the record survives plan finalisation.
+**Token tracking lifecycle**: At plan time, `find-session.sh` identifies the current Claude Code session UUID from the process tree and writes it to `STATE.md`. `/pace:plan` also clears `.pace/usage.md` so each plan starts with a fresh ledger. After each agent completes, `append-usage.sh` calls `token-usage.py aggregate` to parse the session's JSONL file, deduplicate entries already recorded, and append a new phase row to `usage.md`. The five lifecycle commands that record usage are: `/pace:execute` (per task), `/pace:verify`, `/pace:fix`, `/pace:amend`, and `/pace:complete` — the last of which records two sub-phases: `memory-synthesis` (the memory-synthesiser agent) and `doc-refresh` (the documentation-specialist full-rescan). `/pace:usage` reads the accumulated `usage.md` and pipes it through `token-usage.py format detail` to render a per-task breakdown table. `/pace:create-pr` pipes the same file through `token-usage.py format summary` to embed a cost summary in the PR body. `/pace:complete` preserves `usage.md` during cleanup so the record survives plan finalisation.
 
 ## PROJECT.md Freshness
 

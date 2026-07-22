@@ -58,8 +58,9 @@ Handing off to /pace:execute...
 
 Then proceed exactly as `/pace:execute` would — load PLAN.md, load episodic
 memory (`.pace/memory/episode.md`) and semantic memory (`.pace/memory/semantic.md`),
-build waves from the remaining tasks, and execute them. (The resume logic is
-identical to a fresh execute run; execute already skips `[x]` tasks and treats
-`[~]` as pending. Episodic memory from earlier tasks is preserved across resume.)
+and work through the remaining tasks one at a time in Implementation Order.
+(The resume logic is identical to a fresh execute run; execute already skips
+`[x]` tasks and treats `[~]` as pending. Episodic memory from earlier tasks is
+preserved across resume.)
 
 </process>

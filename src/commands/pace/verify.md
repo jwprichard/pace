@@ -142,7 +142,7 @@ question: "Verification found failing criteria. How would you like to proceed?"
 header: "Needs work"
 options:
   - label: "Fix automatically"
-    description: "Spawn the assigned agents to fix each failing criterion, then re-verify."
+    description: "Spawn a fix agent to address the failing criteria, then re-verify."
   - label: "Fix manually"
     description: "I'll fix the issues myself. Findings are saved to .pace/VERIFICATION.md."
 ```
@@ -154,65 +154,63 @@ Findings saved to .pace/VERIFICATION.md.
 Run /pace:verify again when you're ready to re-check.
 ```
 
-## Step 4 — Spawn fix agents
+## Step 4 — Spawn the fix agent
 
-Read `.pace/VERIFICATION.md`. For each failing task:
-- Note the agent, files, allowed tools, and the specific failing criteria
+Read `.pace/VERIFICATION.md`. Collect every failing task's block: the task ID,
+files, and the specific failing criteria (criterion, expected, found).
 
-Spawn each failing task's agent as a **parallel Agent tool call** with `dangerouslySkipPermissions: true`.
-If a **model override** was read in Step 1, set the `model` parameter to `{model_value}` on
-each Agent tool call. When no model override is set, omit the `model` parameter
-entirely so agents inherit the session default.
+Spawn a **single fix agent** covering all failures, using the Agent tool with
+`dangerouslySkipPermissions: true`. If a **model override** was read in Step 1,
+set the `model` parameter to `{model_value}` on the Agent tool call. When no model
+override is set, omit the `model` parameter entirely so the agent inherits the
+session default.
 
 Use this prompt:
 
 ---
-You are fixing a verification failure as @{agent}.
+You are fixing verification failures from a PACE plan.
 
 ## What Failed
 
-{failing criteria block from VERIFICATION.md for this task — criterion, expected, found}
-
-## Files to Fix
-
-{files from VERIFICATION.md}
+{all failing criteria blocks from VERIFICATION.md — for each failing task:
+task ID, title, files, and each failing criterion with expected vs found}
 
 ## Original Task Context
 
-Read `.pace/PLAN.md` — find the task block matching `### {id}. {title}` — for full context on what this task was meant to deliver.
+Read `.pace/PLAN.md` — find the task block matching `### {id}. {title}` for each
+failing task — for full context on what each task was meant to deliver.
 
 ## Your Job
 
 Fix only what failed. Do not rewrite passing work. Address each failing criterion
-precisely — the expected state is the spec.
+precisely — the expected state is the spec. Work through the failures one at a
+time, in task-ID order.
 
 When done, confirm each criterion you fixed and what you changed.
 
 ## Allowed Tools
 
-{allowed tools from VERIFICATION.md}
+Read, Write, Edit, NotebookEdit, Bash, Glob, Grep, WebSearch, WebFetch
 
 ---
 
-Wait for all fix agents to complete.
+Wait for the fix agent to complete.
 
 ### Record fix agent usage
 
-If `session_uuid` is available, record each fix agent's token usage in order. For each
-fix agent N (corresponding to each failing task processed in this step), run the following.
-When a **model override** was read in Step 1, pass it as the 5th argument to
-`append-usage.sh`. When no model override is set, omit the 5th argument entirely:
+If `session_uuid` is available, run the following. When a **model override** was read
+in Step 1, pass it as the 5th argument to `append-usage.sh`. When no model override is
+set, omit the 5th argument entirely:
 
 ```bash
 # With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type} "" {model_value}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix fix-agent "" {model_value}
 
 # Without model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix-{N} {agent_type}
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} | bash ~/.claude/lib/pace/append-usage.sh verify fix fix-agent
 ```
 
-Where `{N}` is the sequential fix number (1, 2, 3, …) and `{agent_type}` is the agent
-type used for that fix. If these commands fail, continue without interrupting the user.
+If this command fails, continue without interrupting the user.
 
 ## Step 5 — Re-verify
 

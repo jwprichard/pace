@@ -279,7 +279,6 @@ rm -f .pace/PLAN.md
 rm -f .pace/STATE.md
 rm -f .pace/memory/episode.md
 rm -rf .pace/requirements/
-rm -rf .pace/drafts/
 ```
 
 Do NOT delete:
@@ -298,7 +297,7 @@ Plan closed.
 
 Episodic memory synthesised into semantic memory.
 PROJECT.md refreshed with latest codebase state.
-Runtime files cleaned up (PLAN.md, STATE.md, episode.md, requirements/, drafts/).
+Runtime files cleaned up (PLAN.md, STATE.md, episode.md, requirements/).
 
 Ready for the next plan. Run /pace:plan to start.
 ```

@@ -92,12 +92,12 @@ For standard features and changes, start planning directly:
 
 `/pace:plan` conducts a short structured interview — it asks what you are building, what done looks like, and any constraints or scope decisions that are genuinely unclear. It will not ask you things it can already infer from your description.
 
-After the interview, PACE assembles a team of domain planning agents matched to your work, runs them in parallel to produce draft plans, then synthesises the drafts into a single `PLAN.md`. It presents the plan to you for approval before any execution begins.
+After the interview, PACE hands the compiled requirements to a single planner agent, which explores the codebase, makes the key technical decisions, and writes `PLAN.md`. It presents the plan to you for approval before any execution begins.
 
 **Available flags for `/pace:plan`:**
 
-- `--tdd` — adds a testing peer agent to the planning team; all test tasks are inserted as prerequisites before their paired implementation tasks
-- `--research` — spawns a web research agent before planning; findings are injected into the planning context as background for the domain agents
+- `--tdd` — the planner adds a `[TEST]` task per feature; all test tasks are inserted as prerequisites before their paired implementation tasks
+- `--research` — spawns a web research agent before planning; findings are injected into the planning context as background for the planner
 - `--abandon` — discards the current in-progress plan and starts fresh; asks for confirmation before deleting anything
 
 You can combine flags: `/pace:plan --tdd --research`.
@@ -120,9 +120,9 @@ Once a plan is approved, execute it:
 /pace:execute
 ```
 
-Each task in the plan is delegated to its assigned specialist agent in a fresh, isolated context. Independent tasks run in parallel; dependent tasks wait for their prerequisites. The orchestrator never implements anything itself — it routes.
+Each task in the plan is delegated to its assigned specialist agent in a fresh, isolated context, one task at a time in Implementation Order. The dispatcher never implements anything itself — it routes.
 
-As tasks complete, PACE records outcomes in `STATE.md` and patches `PROJECT.md` to reflect what changed.
+As tasks complete, PACE records outcomes in `STATE.md`. When the run finishes, `PROJECT.md` is patched once to reflect everything that changed.
 
 If the session is interrupted mid-execution, resume from the last incomplete task:
 
@@ -211,7 +211,7 @@ Settings are saved to `.pace/settings.md` and persist across plan cycles. `/pace
 
 | Setting | Controls | Accepted values |
 |---|---|---|
-| `plan-model` | Domain planners, synthesiser, research agents, codebase analyst | `sonnet`, `opus`, `haiku` |
+| `plan-model` | Planner, roadmap planner, research agents, codebase analyst | `sonnet`, `opus`, `haiku` |
 | `execute-model` | Specialist implementers, verification, fix agents, documentation patches | `sonnet`, `opus`, `haiku` |
 
 A common pattern is to run planning on `opus` (where architectural reasoning matters most) and execution on `sonnet` (for faster, cheaper task implementation). The orchestrator session model is never changed by these settings.

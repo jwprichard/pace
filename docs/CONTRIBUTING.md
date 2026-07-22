@@ -14,10 +14,10 @@ PACE is a spec-driven development workflow for Claude Code. Contributions typica
 pace/
   src/
     agents/
-      pace-synthesiser.md          # Top-level PACE agent (synthesiser)
       pace/
         pace-codebase-analyst.md   # PACE sub-agents
         pace-documentation-specialist.md
+        pace-planner.md
         pace-verification-specialist.md
     commands/
       pace/
@@ -81,7 +81,7 @@ Commands live in `src/commands/pace/` and are Markdown files with YAML frontmatt
 ```yaml
 ---
 name: pace:plan
-description: Interview the user, assemble a domain planning team, and produce PLAN.md
+description: Interview the user, then produce PLAN.md via a single planner agent
 argument-hint: "[--tdd] [--research] [--abandon] [topic]"
 allowed-tools:
   - Read
@@ -142,8 +142,8 @@ The body of the agent file defines the agent's identity, capabilities, workflow,
 
 PACE has two agent locations:
 
-- **Top-level agents** (`src/agents/`) — standalone agents that PACE commands spawn directly (e.g. `pace-synthesiser`).
-- **Sub-agents** (`src/agents/pace/`) — specialist agents scoped to the PACE namespace (e.g. `pace-codebase-analyst`, `pace-verification-specialist`).
+- **Top-level agents** (`src/agents/`) — standalone agents that act as routing targets outside the PACE namespace (currently none).
+- **Sub-agents** (`src/agents/pace/`) — specialist agents scoped to the PACE namespace (e.g. `pace-planner`, `pace-codebase-analyst`, `pace-verification-specialist`).
 
 Choose `src/agents/pace/` for agents that are part of the PACE internal workflow. Choose `src/agents/` only for agents that act as standalone routing targets.
 

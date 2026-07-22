@@ -352,8 +352,10 @@ Dispatching now...
 
 ### Stage 6 — Dispatch fix agents
 
-For each fix task, spawn the assigned agent as a parallel Agent tool call with
-`dangerouslySkipPermissions: true` and this prompt (substitute all placeholders).
+Dispatch fix tasks **one at a time, in fix-number order**. For each fix task,
+spawn the assigned agent using the Agent tool with `dangerouslySkipPermissions: true`
+and this prompt (substitute all placeholders). Wait for the agent to complete and
+record its outcome (Stage 7) before dispatching the next fix.
 
 If a **model override** was read in Stage 0, set the `model` parameter to `{model_value}` on
 every Agent tool call. When no model override is set, omit the `model` parameter
@@ -389,12 +391,10 @@ You are applying **Fix {N}: {title}** as part of a PACE plan.
 {success criteria from PLAN.md fix block}
 ---
 
-Wait for all fix agents to complete.
-
 ### Record fix agent usage
 
-If `session_uuid` is available, record each fix agent's token usage in order. For each
-fix task F{N} dispatched in this stage, run the following. When a **model override** was
+After each fix agent completes, if `session_uuid` is available, record its token usage.
+For the fix task F{N} just completed, run the following. When a **model override** was
 read in Stage 0, pass it as the 5th argument to `append-usage.sh`. When no model override
 is set, omit the 5th argument entirely:
 
@@ -411,7 +411,7 @@ task. If these commands fail, continue without interrupting the user.
 
 ### Stage 7 — Record outcomes
 
-For each fix task:
+For each fix task, immediately after its agent completes:
 
 **On success:** Edit STATE.md — change `[ ]` to `[x]`. Move the task line into
 `## Completed` with a timestamp:
@@ -434,20 +434,6 @@ _Completed: {ISO timestamp}_
 ---
 ```
 
-Spawn `pace-documentation-specialist` as a fire-and-forget Agent tool call in patch mode.
-If a **model override** was read in Stage 0, set the `model` parameter to `{model_value}` on
-this Agent tool call. When no model override is set, omit the `model` parameter
-entirely:
-
-```
-Patch mode. Fix just completed.
-Task: Fix {N} — {title}
-Agent: {agent}
-Files: {files from PLAN.md}
-Summary: {completion summary returned by the specialist}
-Update .pace/PROJECT.md to reflect any changes introduced by this fix.
-```
-
 **On failure:** Edit STATE.md — change `[ ]` to `[!]`. Record the error in
 `## Blockers`:
 
@@ -460,6 +446,21 @@ Set `## Status` to `blocked` and tell the user which fix failed and why.
 ### Stage 8 — Complete
 
 When all fix tasks are `[x]`:
+
+Spawn `pace-documentation-specialist` using the Agent tool in patch mode, once for
+all fixes applied in this run. If a **model override** was read in Stage 0, set the
+`model` parameter to `{model_value}` on this Agent tool call. When no model override
+is set, omit the `model` parameter entirely:
+
+```
+Patch mode. A fix run just completed.
+Fixes applied:
+{for each completed fix: "Fix {N} — {title} (@{agent}): {one-line summary}"}
+
+Update .pace/PROJECT.md to reflect any changes introduced by these fixes.
+```
+
+Wait for it to complete.
 
 Edit STATE.md — update `## Status` to `complete`.
 

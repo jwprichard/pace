@@ -213,7 +213,8 @@ Follow the existing documentation style in `docs/api/` for formatting convention
 2. Password hashing utility (1b)
 3. Registration and login endpoints (1c)
 4. JWT middleware (1d)
-5. End-to-end tests (2a) and API documentation (3a) — can run in parallel
+5. End-to-end tests (2a)
+6. API documentation (3a)
 
 ---
 

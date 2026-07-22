@@ -10,8 +10,8 @@ PACE doesn't ship its own agents — it discovers whatever agents you have insta
 
 1. **Sync** — PACE scans your installed agents and builds a two-tier registry
 2. **Scan** — PACE maps your codebase structure and writes `PROJECT.md` so agents have accurate context
-3. **Plan** — An interview extracts requirements; parallel domain experts draft plans; a synthesiser merges them into `PLAN.md`
-4. **Execute** — Each task is delegated to the best-fit specialist agent. Independent tasks run in parallel waves; each wave is committed before the next begins
+3. **Plan** — An interview extracts requirements; a single planner agent turns them into `PLAN.md`
+4. **Execute** — Each task is delegated to its assigned specialist agent, one at a time in Implementation Order; each task is committed before the next begins
 5. **Verify** — Completed work is checked against the plan's success criteria
 6. **Complete** — Branch is reconciled, runtime files are cleaned up, and the PR is finalised
 
@@ -93,7 +93,7 @@ flowchart TD
 | `/pace:sync-agents` | Scan installed agents and build the PACE agent registry |
 | `/pace:scan` | Scans the codebase and produces `.pace/PROJECT.md` for use by planning and execution agents |
 | `/pace:roadmap` | Interview the user, decompose a large feature into phases, and produce `ROADMAP.md` |
-| `/pace:plan` | Interview the user, assemble a domain planning team, and produce `PLAN.md` |
+| `/pace:plan` | Interview the user, then produce `PLAN.md` via a single planner agent |
 | `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent, and tracks progress in `STATE.md` |
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria using the pace-verification-specialist |
 | `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — structured by default, `--light` for quick one-shot fixes |
@@ -116,14 +116,12 @@ flowchart TD
     F1["Stage 1: Pre-flight\nLoad settings + model override\nCheck agent registry\nCheck PROJECT.md (scan if missing)\nCheck prior plan state\nCheck roadmap context\nClear plan artifacts\nCapture session UUID"]
     F15["Stage 1.5: Research\n(--research only)\nWebSearch + WebFetch\nWrite requirements/research.md"]
     F2["Stage 2: Interview\nParse prompt + state understanding\nAsk 2-4 targeted questions\nWrite requirements/brief.md"]
-    F3["Stage 3: Agent selection\nSelect 2-3 domain planning agents\nfrom registry based on work type\n(+testing peer if --tdd)"]
-    F4["Stage 4: Parallel draft planning\nSpawn domain agents in parallel\nEach writes .pace/drafts/{agent}.md"]
-    F5["Stage 5: Synthesis\npace-synthesiser merges all drafts\ninto a single PLAN.md"]
-    F5b["Stage 5b: Token usage\nAggregate + record planning tokens"]
-    F6{"Stage 6: Approval\nApprove / Edit / Reject"}
-    F6A["Write STATE.md\nCreate branch if on main/master"]
-    F6B["Apply edits\nRe-present plan"]
-    F6C["Discard PLAN.md\nStart over"]
+    F3["Stage 3: Plan\nSpawn pace-planner with brief +\nPROJECT.md + agent registry\nWrites PLAN.md directly\n(TDD rules applied if --tdd)"]
+    F4["Stage 4: Token usage\nAggregate + record planning tokens"]
+    F5{"Stage 5: Approval\nApprove / Edit / Reject"}
+    F5A["Write STATE.md\nCreate branch if on main/master"]
+    F5B["Apply edits\nRe-present plan"]
+    F5C["Discard PLAN.md\nStart over"]
 
     F0 --> F1
     F1 --> F15
@@ -132,12 +130,10 @@ flowchart TD
     F2 --> F3
     F3 --> F4
     F4 --> F5
-    F5 --> F5b
-    F5b --> F6
-    F6 -->|Approve| F6A
-    F6 -->|Edit| F6B
-    F6B --> F6
-    F6 -->|Reject| F6C
+    F5 -->|Approve| F5A
+    F5 -->|Edit| F5B
+    F5B --> F5
+    F5 -->|Reject| F5C
 ```
 
 ### /pace:execute
@@ -145,19 +141,19 @@ flowchart TD
 ```mermaid
 flowchart TD
     E1["Stage 1: Pre-flight\nLoad PLAN.md + STATE.md\nExtract session UUID\nDerive encoded project path\nStaleness check (PROJECT.md vs HEAD)\nLoad semantic memory\nRead model override from settings.md"]
-    E2["Stage 2: Load tasks + build waves\nParse pending/in_progress tasks\nBuild dependency graph\nSchedule into waves\nRegister tasks in Claude task system"]
-    E3a["Stage 3a: Mark wave in_progress\nEdit STATE.md: [ ] → [~]\nTaskUpdate → in_progress"]
-    E3b["Stage 3b: Spawn wave agents in parallel\nBuild context from PLAN.md\nSpawn all wave tasks simultaneously\nWait for all to complete"]
-    E3c["Stage 3c: Commit wave changes\nFor each successful task (in order):\ngit add files from ## Files Modified\ngit commit with task title"]
-    E3d["Stage 3d: Record wave outcomes\nSTATE.md: [~] → [x] or [!]\nepisode.md: append completion summary\nToken usage recording\nDoc-specialist patch (fire-and-forget)\nOn failure: record blocker, stop"]
-    E4["Stage 4: Complete\nSTATE.md status → complete\nRecord execute orchestrator token usage\nTell user to run /pace:verify"]
+    E2["Stage 2: Load tasks + build run order\nParse pending/in_progress tasks\nOrder by PLAN.md Implementation Order\nRegister tasks in Claude task system"]
+    E3a["Stage 3a: Mark task in_progress\nEdit STATE.md: [ ] → [~]\nTaskUpdate → in_progress"]
+    E3b["Stage 3b: Spawn the specialist agent\nBuild context from PLAN.md\nOne task, one agent\nWait for it to complete"]
+    E3c["Stage 3c: Commit the task's changes\ngit add files from ## Files Modified\ngit commit with task title"]
+    E3d["Stage 3d: Record the outcome\nSTATE.md: [~] → [x] or [!]\nepisode.md: append completion summary\nToken usage recording\nOn failure: record blocker, stop"]
+    E4["Stage 4: Complete\nDoc-specialist patch (once, whole run)\nSTATE.md status → complete\nRecord execute dispatcher token usage\nTell user to run /pace:verify"]
 
     E1 --> E2
     E2 --> E3a
     E3a --> E3b
     E3b --> E3c
     E3c --> E3d
-    E3d -->|more waves| E3a
+    E3d -->|next task| E3a
     E3d -->|all done| E4
     E3d -->|blocked| STOP["Stop — surface blocker\nRun /pace:resume to retry"]
 ```
@@ -215,7 +211,7 @@ execute-model: sonnet
 
 | Setting | Accepted values | Which agents it controls |
 |---|---|---|
-| `plan-model` | `sonnet`, `opus`, `haiku` | Domain planners, synthesiser, research agents, codebase analyst |
+| `plan-model` | `sonnet`, `opus`, `haiku` | Planner, roadmap planner, research agents, codebase analyst |
 | `execute-model` | `sonnet`, `opus`, `haiku` | Specialist implementers, verification, fix agents, documentation patches |
 
 **Which commands read which setting:**

@@ -101,7 +101,7 @@ Run /pace:resume to pick up where you left off.
 
 **If `in_progress` with only `[ ]` and `[x]` tasks:**
 ```
-Ready to continue. Run /pace:execute to start the next wave.
+Ready to continue. Run /pace:execute to start the next task.
 ```
 
 </process>

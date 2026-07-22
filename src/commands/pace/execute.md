@@ -1,6 +1,6 @@
 ---
 name: pace:execute
-description: Reads PLAN.md, delegates each task to the assigned specialist agent, and tracks progress in STATE.md
+description: Reads PLAN.md, delegates each task to its assigned specialist agent one at a time, and tracks progress in STATE.md
 allowed-tools:
   - Read
   - Edit
@@ -11,21 +11,21 @@ allowed-tools:
 ---
 
 <objective>
-Execute the current plan by delegating each task to its assigned specialist agent.
-Run independent tasks in parallel. Update STATE.md before and after each task so
-progress is durable across sessions.
+Execute the current plan by delegating each task to its assigned specialist agent,
+one task at a time, in Implementation Order. Update STATE.md before and after each
+task so progress is durable across sessions.
 
 Mirror all task state into Claude's native task system so progress is visible
 in the UI throughout execution.
 
-You are an orchestrator. You do not implement, code, write, or design anything yourself.
+You are a dispatcher. You do not implement, code, write, or design anything yourself.
 Every task goes to a specialist agent via the Agent tool.
 </objective>
 
 <process>
 
 > **Agent spawning rule:** Every `Agent` spawned in this command must use `dangerouslySkipPermissions: true`.
-> This applies to all specialist agents and all documentation-specialist patch calls.
+> This applies to all specialist agents and the documentation-specialist patch call.
 
 ## Stage 1 — Pre-flight
 
@@ -82,7 +82,7 @@ If `.pace/PROJECT.md` exists:
 
 ### Semantic memory
 
-If `.pace/memory/semantic.md` exists, read it. This gives the orchestrator
+If `.pace/memory/semantic.md` exists, read it. This gives the dispatcher
 institutional context — cross-plan decisions and patterns — when building agent prompts.
 
 ### Model override
@@ -96,13 +96,13 @@ If the file does not exist, the `execute-model:` line is missing, or its value i
 blank (e.g. `execute-model:` with nothing after it), no model override is used —
 agents will inherit the session model as normal.
 
-The orchestrator's own model is never changed by this setting.
+The dispatcher's own model is never changed by this setting.
 
 > **How to pass the model override:** `model` is a top-level parameter on the Agent tool,
 > not text inside the prompt. Correct usage:
 > `Agent(description: "...", prompt: "...", model: "{model_value}")`
 
-## Stage 2 — Load Tasks and Build Waves
+## Stage 2 — Load Tasks and Build the Run Order
 
 Parse all tasks from the `## Tasks` section of STATE.md. Task IDs use the
 part-prefixed alphanumeric scheme (e.g. `1a`, `1b`, `2a`):
@@ -114,21 +114,19 @@ part-prefixed alphanumeric scheme (e.g. `1a`, `1b`, `2a`):
 - [!] 1a: {title} — @{agent}     ← blocked (stop — surface to user)
 ```
 
-For each pending or in_progress task, find its block in PLAN.md by matching
-the task ID heading (e.g. `### 1a. {title}`) to get the `**Depends on:**` field.
+Read the `## Implementation Order` section of PLAN.md. The run order is the
+Implementation Order, minus tasks already `[x]` in STATE.md. Tasks marked `[~]`
+are treated as pending and keep their position. If a task appears in STATE.md
+but not in the Implementation Order (or vice versa), warn the user and fall
+back to STATE.md's top-to-bottom order.
 
-Build an execution plan using wave scheduling:
-- **Wave 1** — tasks with `Depends on: none` (or no dependencies)
-- **Wave N** — tasks whose dependencies are all completed or in a prior wave
-
-Example: tasks 1a, 1b, 2a where 2a depends on 1a:
-- Wave 1: tasks 1a and 1b (run in parallel)
-- Wave 2: task 2a
+Tasks run **one at a time, in this order**. There is no parallel execution —
+each task completes (and is committed) before the next starts.
 
 If all tasks are already `[x]`, go to Stage 4 (complete).
 
-Tell the user the execution plan: how many waves, which tasks run in each wave,
-which tasks are being skipped as already done.
+Tell the user the run order: which tasks will run, in what order, and which
+tasks are being skipped as already done.
 
 ### Register tasks in Claude's task system
 
@@ -142,21 +140,20 @@ these IDs to update status throughout execution.
 For tasks already `[x]` (completed in a prior session), call TaskCreate then
 immediately TaskUpdate to `completed` so the full plan is visible in the UI.
 
-## Stage 3 — Execute Waves
+## Stage 3 — Execute Tasks Sequentially
 
-For each wave, in order:
+For each task in the run order, perform steps 3a–3d, then move to the next task.
+Do not start a task until the previous task's outcome is fully recorded.
 
-### 3a — Mark all wave tasks in_progress
+### 3a — Mark the task in_progress
 
-Edit STATE.md: change each task's marker from `[ ]` or `[~]` to `[~]`.
-Call TaskUpdate for each wave task: set status to `in_progress`.
-Do this for all tasks in the wave before spawning any agents.
+Edit STATE.md: change the task's marker from `[ ]` or `[~]` to `[~]`.
+Call TaskUpdate for the task: set status to `in_progress`.
 
-### 3b — Spawn all wave agents in parallel
+### 3b — Spawn the specialist agent
 
-For each task in the wave, build its context from PLAN.md. Find the task's block
-by matching the heading `### {id}. {title}` (e.g. `### 1a. Flyway migration`).
-Extract:
+Build the task's context from PLAN.md. Find the task's block by matching the
+heading `### {id}. {title}` (e.g. `### 1a. Flyway migration`). Extract:
 - The full narrative description (everything between the metadata fields and the success criteria)
 - `**Files:**` — files likely to be affected
 - `**Agent:**` — the assigned specialist
@@ -164,14 +161,14 @@ Extract:
 - `**Success criteria:**` — the observable outcomes
 
 If `.pace/PROJECT.md` exists, read the `## Stack` and `## Structure` sections
-to prepend as codebase context in each agent's prompt.
+to prepend as codebase context in the agent's prompt.
 
-Spawn all tasks in the wave as **simultaneous parallel Agent tool calls** using this
-prompt for each (substitute all `{...}` placeholders).
+Spawn the assigned specialist as a single Agent tool call using this prompt
+(substitute all `{...}` placeholders).
 
 If a **model override** was read in Stage 1, set the `model` parameter to `{model_value}` on
-every Agent tool call. When no model override is set, omit the `model` parameter
-entirely so agents inherit the session default:
+the Agent tool call. When no model override is set, omit the `model` parameter
+entirely so the agent inherits the session default:
 
 ---
 You are executing **Task {id}: {title}** as part of a PACE plan.
@@ -185,7 +182,7 @@ You are executing **Task {id}: {title}** as part of a PACE plan.
   not silently expand scope.
 - Do not implement work outside your assignment.
 - Do not run any `git` commands — no `git add`, `git commit`, or `git push`.
-  The orchestrator handles all commits.
+  The dispatcher handles all commits.
 - When done, confirm each success criterion is met.
 - Your completion summary MUST end with a `## Files Modified` section listing
   every file you created, modified, or deleted. One file path per line. Example:
@@ -222,14 +219,11 @@ between the metadata fields and the success criteria}
 {success criteria from PLAN.md}
 ---
 
-Wait for **all** tasks in the wave to complete before proceeding to the next wave.
+Wait for the task to complete before proceeding.
 
-### 3c — Commit wave changes
+### 3c — Commit the task's changes
 
-After all tasks in the wave complete, commit each task's changes individually.
-Process tasks in task-number order, one at a time:
-
-For each **successful** task in the wave:
+**On success:**
 
 1. Parse the `## Files Modified` section from the agent's completion summary.
    Extract all file paths listed.
@@ -257,11 +251,7 @@ git diff --cached --quiet || git commit -m "{task title}"
 ```
 This is a safety net — agents should always report their files.
 
-After all task commits for the wave are done, proceed to 3d.
-
-### 3d — Record wave outcomes
-
-For each task in the wave:
+### 3d — Record the outcome
 
 **On success:** Edit STATE.md — change `[~]` to `[x]`. Move the task line into
 `## Completed` with a timestamp:
@@ -312,43 +302,7 @@ Where `{id}` is the task ID (e.g. `1a`) and `{agent}` is the agent type from the
 in STATE.md. If the command fails, continue without interrupting the user — token
 recording is non-blocking.
 
-Then spawn `pace-documentation-specialist` using the Agent tool in patch mode.
-If a **model override** was read in Stage 1, set the `model` parameter to `{model_value}` on
-this Agent tool call. When no model override is set, omit the `model` parameter
-entirely:
-
-```
-Patch mode. Task just completed.
-Task: {title}
-Agent: {agent}
-Files: {files from PLAN.md}
-Summary: {completion summary returned by the specialist}
-Update .pace/PROJECT.md to reflect any changes introduced by this task.
-```
-
-(Spawn this as a fire-and-forget parallel Agent tool call — do not wait for it before
-processing the next task in the wave outcome loop. If PROJECT.md does not
-exist, the specialist will skip silently.)
-
-**Record token usage for the documentation-specialist patch (if `session_uuid` is non-null):**
-
-After spawning the documentation-specialist (fire-and-forget — do not wait for it to
-complete before recording; run these bash commands after spawning), run the following.
-When a **model override** was read in Stage 1, pass it as the 5th argument to
-`append-usage.sh`. When no model override is set, omit the 5th argument entirely:
-
-```bash
-# With model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{id} pace-documentation-specialist "" {model_value}
-
-# Without model override:
-python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
-  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch-{id} pace-documentation-specialist
-```
-
-Where `{id}` is the task ID whose patch is being applied. If the command fails,
-continue without interrupting the user — token recording is non-blocking.
+Then move to the next task in the run order (back to 3a).
 
 **On failure:** Edit STATE.md — change `[~]` to `[!]`. Record the error in
 `## Blockers`:
@@ -361,20 +315,56 @@ Task {id} ({title}): {brief description of what went wrong}
 Call TaskUpdate for this task: set subject to `[BLOCKED] Task {id}: {title}`,
 status to `completed` (Claude tasks have no blocked state).
 
-Then update `## Status` to `blocked`, stop execution (do not start the next wave),
+Then update `## Status` to `blocked`, stop execution (do not start the next task),
 and tell the user:
 - Which task failed and why
 - What they can do to resolve it (fix the issue, then run `/pace:resume`)
-
-If multiple tasks in the same wave fail, record all blockers before stopping.
 
 ## Stage 4 — Complete
 
 When all tasks are `[x]`:
 
+### Patch PROJECT.md
+
+Spawn `pace-documentation-specialist` using the Agent tool in patch mode, once for
+the whole execution. If a **model override** was read in Stage 1, set the `model`
+parameter to `{model_value}` on this Agent tool call. When no model override is set,
+omit the `model` parameter entirely:
+
+```
+Patch mode. A plan execution just completed.
+Plan: {plan title from STATE.md}
+Execution log:
+
+{full contents of .pace/memory/episode.md}
+
+Update .pace/PROJECT.md to reflect the changes introduced by this execution.
+```
+
+Wait for it to complete. (If PROJECT.md does not exist, the specialist will skip silently.)
+
+**Record token usage for the documentation patch (if `session_uuid` is non-null):**
+
+When a **model override** was read in Stage 1, pass it as the 5th argument to
+`append-usage.sh`. When no model override is set, omit the 5th argument entirely:
+
+```bash
+# With model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch pace-documentation-specialist "" {model_value}
+
+# Without model override:
+python3 ~/.claude/lib/pace/token-usage.py aggregate {session_uuid} {encoded_project_path} \
+  | bash ~/.claude/lib/pace/append-usage.sh execute doc-patch pace-documentation-specialist
+```
+
+If the command fails, continue without interrupting the user — token recording is non-blocking.
+
+### Finalise state
+
 Edit STATE.md — update `## Status` to `complete`.
 
-**Record execute orchestrator token usage (if `session_uuid` is non-null):**
+**Record execute dispatcher token usage (if `session_uuid` is non-null):**
 
 Run the following bash commands:
 

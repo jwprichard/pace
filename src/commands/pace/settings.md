@@ -72,7 +72,7 @@ Effect descriptions:
 - If not set: "Planning agents inherit session model" / "Execution agents inherit session model"
 
 Include a brief explanation of which agents fall into each category:
-- **plan-model** affects: domain planners, synthesiser, research agents, codebase analyst
+- **plan-model** affects: planner, roadmap planner, research agents, codebase analyst
 - **execute-model** affects: specialist implementers, verification, fix agents, amendment agents, documentation patches
 
 ### 2c — Ask what to change
@@ -84,7 +84,7 @@ question: "Which setting would you like to change?"
 header: "Settings"
 options:
   - label: "plan-model"
-    description: "Model for planning agents (planners, synthesiser, research, codebase analyst)"
+    description: "Model for planning agents (planner, roadmap planner, research, codebase analyst)"
   - label: "execute-model"
     description: "Model for execution agents (specialists, verification, fixes, amendments, documentation)"
   - label: "Done"
@@ -127,8 +127,9 @@ _Persistent configuration for the PACE workflow. This file is not cleared by /pa
 
 ## Model
 
-<!-- plan-model: Model for planning-phase agents (planners, synthesiser,  -->
-<!-- research, codebase analyst). Leave blank to inherit session model.    -->
+<!-- plan-model: Model for planning-phase agents (planner, roadmap        -->
+<!-- planner, research, codebase analyst). Leave blank to inherit session  -->
+<!-- model.                                                                -->
 
 <!-- execute-model: Model for execution-phase agents (specialists,        -->
 <!-- verification, fixes, documentation). Leave blank to inherit session   -->

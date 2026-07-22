@@ -7,9 +7,11 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 ## Key Design Principles
 
 - **Orchestrator never implements** — every task is delegated to a specialist agent. The orchestrator routes; it doesn't code, write, or design.
+- **One agent per stage** — planning, execution, and review each run singular agents. One planner writes the plan, one specialist executes each task in turn, one verifier checks the work. No agent swarms, no draft merging.
 - **Agent routing is native** — the planner discovers installed agents and assigns agent hints at plan time, not after.
 - **Bring your own agents** — PACE routes to whatever is installed in `~/.claude/agents/` and `.claude/agents/`. If no agent fits, the planner flags it rather than falling back to direct implementation.
 - **Tasks are atomic** — each task has one agent owner, is completable in one session, and has observable success criteria. Plan size is not artificially limited.
+- **Execution is sequential** — tasks run one at a time in Implementation Order, each in a fresh agent context, each committed before the next starts.
 - **State is simple** — a single `STATE.md`. No state machine.
 - **Verification is goal-backward** — success criteria describe what must be true, not what was done.
 
@@ -19,9 +21,9 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 |---|---|
 | `/pace:sync-agents` | Scan installed agents and build the PACE agent registry |
 | `/pace:roadmap` | Interview the user, decompose a large feature into phases, and produce `ROADMAP.md` |
-| `/pace:plan` | Interview the user, assemble a domain planning team, and produce `PLAN.md` |
+| `/pace:plan` | Interview the user, then produce `PLAN.md` via a single planner agent |
 | `/pace:scan` | Scans the codebase and produces `.pace/PROJECT.md` for use by planning and execution agents |
-| `/pace:execute` | Reads `PLAN.md`, delegates each task to the assigned specialist agent, and tracks progress in `STATE.md` |
+| `/pace:execute` | Reads `PLAN.md`, delegates each task to its assigned specialist agent one at a time, and tracks progress in `STATE.md` |
 | `/pace:verify` | Checks completed work against `PLAN.md` success criteria using the pace-verification-specialist |
 | `/pace:fix` | Dispatches targeted fixes within the PACE lifecycle — structured by default, `--light` for quick one-shot fixes |
 | `/pace:amend` | Adds new tasks to the current plan mid-execution — structured by default, `--light` for quick one-shot additions |
@@ -37,9 +39,9 @@ A spec-driven development workflow for Claude Code. PACE interviews you for requ
 
 | Agent | Role |
 |---|---|
-| `pace-synthesiser` | Reads domain expert draft plans and synthesises them into a single coherent `PLAN.md`. Spawned by `/pace:plan` after all parallel planners complete. |
+| `pace-planner` | Produces a complete `PLAN.md` directly from the requirements brief, codebase context, and agent registry. Spawned by `/pace:plan` after the interview completes. |
 | `pace-codebase-analyst` | Interprets raw codebase scan output and writes a structured `PROJECT.md` capturing stack, structure, conventions, and entry points. |
-| `pace-documentation-specialist` | Maintains `.pace/PROJECT.md` as a living codebase map — patches it after tasks complete and rewrites it fully on plan close. |
+| `pace-documentation-specialist` | Maintains `.pace/PROJECT.md` as a living codebase map — patches it after each execution run and rewrites it fully on plan close. |
 | `pace-verification-specialist` | Verifies completed work against `PLAN.md` success criteria using evidence-based checks — files, greps, and bash commands. |
 
 ## Agent Registry
@@ -90,7 +92,7 @@ execute-model: sonnet
 
 | Setting | Accepted values | Which agents it controls |
 |---|---|---|
-| `plan-model` | `sonnet`, `opus`, `haiku` | Domain planners, synthesiser, research agents, codebase analyst |
+| `plan-model` | `sonnet`, `opus`, `haiku` | Planner, roadmap planner, research agents, codebase analyst |
 | `execute-model` | `sonnet`, `opus`, `haiku` | Specialist implementers, verification, fix agents, documentation patches |
 
 **Which commands read which setting:**
@@ -107,10 +109,10 @@ execute-model: sonnet
 pace/
   src/
     agents/
-      pace-synthesiser.md
       pace/
         pace-codebase-analyst.md
         pace-documentation-specialist.md
+        pace-planner.md
         pace-verification-specialist.md
     commands/
       pace/

@@ -12,12 +12,12 @@ allowed-tools:
 ---
 
 <objective>
-Conduct a structured interview about a large feature, select domain expert agents
-to propose phase decompositions, then synthesise their output into a single
-ROADMAP.md with ordered phases — each scoped to a single /pace:plan cycle.
+Conduct a structured interview about a large feature, then hand the requirements
+to a single roadmap planning agent that decomposes the work into ordered phases
+and writes ROADMAP.md — each phase scoped to a single /pace:plan cycle.
 
-You are a coordinator. You do not write the roadmap yourself — you assemble the
-team and synthesise their output.
+You are a coordinator. You do not write the roadmap yourself — you run the
+interview and dispatch the planner.
 </objective>
 
 <process>
@@ -50,15 +50,7 @@ that value (e.g. `sonnet`, `opus`, `haiku`). If the file does not exist, or the
 
 Run the following checks in order. Stop on the first failure unless otherwise noted.
 
-### Check 1: Agent registry
-
-Load `.pace/AGENT-REGISTRY.md`.
-If it does not exist, stop:
-```
-Run /pace:sync-agents first to build the agent registry.
-```
-
-### Check 2: PROJECT.md (required for planning)
+### Check 1: PROJECT.md (required for planning)
 
 Check whether `.pace/PROJECT.md` exists.
 
@@ -103,11 +95,11 @@ Agents may plan against stale codebase structure. Consider running /pace:scan to
 ```
 Then continue.
 
-### Check 3: Existing roadmap
+### Check 2: Existing roadmap
 
 Check whether `.pace/ROADMAP.md` exists.
 
-- **Missing** → clean slate, proceed to Check 4
+- **Missing** → clean slate, proceed to Check 3
 - **Exists:**
   - If `abandon_mode = false` → stop:
     ```
@@ -127,14 +119,14 @@ Check whether `.pace/ROADMAP.md` exists.
     ```bash
     rm -f .pace/ROADMAP.md
     ```
-    Then proceed to Check 4.
+    Then proceed to Check 3.
     If **No**: stop. No changes made.
 
-### Check 4: Clear plan-specific artifacts
+### Check 3: Clear plan-specific artifacts
 
 ```bash
-rm -rf .pace/requirements/ .pace/drafts/
-mkdir -p .pace/requirements/ .pace/drafts/
+rm -rf .pace/requirements/
+mkdir -p .pace/requirements/
 ```
 
 ## Stage 1.5 — Research
@@ -272,10 +264,10 @@ Once all questions are answered, compile everything into a structured requiremen
 {any decomposition hints from the interview — e.g., "backend before frontend"}
 
 ## Scale
-{estimated number of phases, or "let agents determine"}
+{estimated number of phases, or "let the planner determine"}
 
 ## Assumptions
-{things inferred, not stated — so agents know what to flag if wrong}
+{things inferred, not stated — so the planner knows what to flag if wrong}
 ```
 
 If `research_mode = true`, append:
@@ -287,41 +279,19 @@ If `research_mode = true`, append:
 
 Write the complete block to `.pace/requirements/brief.md`.
 
-## Stage 3 — Agent Selection
-
-Based on the interview answers, select **2-3 domain planning agents** from the
-registry. Use this as a guide:
-
-| Work type | Planning team |
-|---|---|
-| Backend / API | `@Software Architect`, `@Backend Architect` |
-| Frontend / UI | `@Software Architect`, `@UX Architect` |
-| Full-stack feature | `@Software Architect`, `@Backend Architect`, `@UX Architect` |
-| Design / UX | `@UX Architect`, `@UI Designer` |
-| Infrastructure | `@Software Architect`, `@DevOps Automator` |
-| Product feature | `@Software Architect`, `@Product Manager` |
-
-`@Software Architect` should be on the team for any technical work.
-Load the relevant Tier 2 division files from `.pace/agents/` to confirm the
-exact agent names before spawning.
-
-Tell the user which agents you are assembling and why.
-
-## Stage 4 — Parallel Phase Decomposition
+## Stage 3 — Decompose
 
 Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
 
-Spawn each selected domain agent as a parallel Agent tool call with the following prompt
-(substitute `{agent_role}`, `{agent_name}`, `{codebase_context}`, and `{requirements}`).
-If `model_override` is set, set the `model` parameter to `{model_override}` on each Agent tool call:
+Tell the user you are dispatching the roadmap planner, then spawn a single
+Agent tool call with `dangerouslySkipPermissions: true` using the prompt below.
+If `model_override` is set, set the `model` parameter to `{model_override}` on
+the Agent tool call:
 
 ---
-You are acting as a **{agent_role}** planning expert.
-
-Your job is to propose how to decompose a large feature into ordered phases.
-Each phase should be scoped to a single planning cycle (2–6 tasks when planned
-in detail later). Focus on your area of expertise only — another agent will cover
-other domains and a synthesiser will merge all proposals.
+You are a roadmap planning expert. Your job is to decompose a large feature
+into ordered phases and write the roadmap. Each phase must be scoped to a
+single planning cycle (2–6 tasks when planned in detail later).
 
 ## Codebase Context
 
@@ -333,72 +303,8 @@ other domains and a synthesiser will merge all proposals.
 
 ## Your Task
 
-Propose a phase decomposition and write it to `.pace/drafts/{agent_name}.md`
-using exactly this format:
-
-```markdown
-# Phase Proposal — {agent_role}
-
-## Domain Focus
-One sentence describing which aspect of the decomposition you are covering.
-
-## Proposed Phases
-
-### Phase: {short title}
-**Objective:** What this phase delivers — one or two sentences describing the
-outcome, not the activities.
-**Key deliverables:**
-- {concrete deliverable 1}
-- {concrete deliverable 2}
-**Depends on:** phase titles this must wait for, or "none"
-**Domain:** {primary domain this phase touches}
-**Estimated complexity:** small (2-3 tasks) | medium (3-4 tasks) | large (5-6 tasks)
-
-### Phase: {short title}
-...
-
-## Ordering Rationale
-Explain why you ordered the phases this way — what must come first and why.
-
-## Risks & Considerations
-Anything the synthesiser should factor into the final decomposition.
-```
-
-Guidelines:
-- Each phase should deliver incremental value where possible — avoid phases that
-  produce nothing usable on their own.
-- Prefer smaller phases over larger ones. If in doubt, split.
-- Mark dependencies accurately — independent phases can be planned in parallel later.
-- Do not plan the tasks within each phase — that is `/pace:plan`'s job.
-  Keep phases at the objective/deliverable level.
----
-
-Wait for all parallel Agent tool calls to complete before proceeding to Stage 5.
-
-## Stage 5 — Synthesis
-
-Read `.pace/PROJECT.md` in full. Read `.pace/requirements/brief.md`.
-
-Once all draft files exist in `.pace/drafts/`, spawn the `pace-synthesiser`
-agent using the Agent tool with the following prompt. If `model_override` is set, include
-`model: {model_override}` in the Agent tool call:
-
----
-Read all phase proposal files in `.pace/drafts/`.
-
-## Codebase Context
-
-{full contents of .pace/PROJECT.md}
-
-The requirements that drove these proposals are:
-
-{contents of .pace/requirements/brief.md}
-
-## Your Task
-
-Synthesise all phase proposals into a single ROADMAP.md at `.pace/ROADMAP.md`.
-
-Use exactly this format:
+Decompose the work into phases and write `.pace/ROADMAP.md` using exactly
+this format:
 
 ```markdown
 # ROADMAP: {feature title}
@@ -429,25 +335,36 @@ _Created: {ISO timestamp}_
 ...
 
 ## Notes
-{Any constraints, decisions, dropped phases, or context from the proposals}
+{Any constraints, risks, dropped scope, or decomposition decisions worth recording}
 ```
 
 Rules:
-1. **Deduplicate** — if multiple proposals cover the same work, merge into one phase.
-2. **Order by dependencies** — a phase cannot depend on a later-numbered phase.
-3. **Preserve all deliverables** — every deliverable from every proposal must appear
-   in some phase unless it is clearly redundant.
-4. **Number sequentially** — Phase 1, Phase 2, Phase 3, etc.
-5. **All phases start as `pending`** — do not set any other status.
-6. **Keep phases plan-sized** — each should produce 2–6 tasks when planned in detail.
-   If a proposed phase is too large, split it. If too small, merge with an adjacent phase.
-7. **Objective describes outcome** — what is true when the phase is done, not what
-   activities occur during it.
+1. **Order by dependencies** — a phase cannot depend on a later-numbered phase.
+2. **Number sequentially** — Phase 1, Phase 2, Phase 3, etc.
+3. **All phases start as `pending`** — do not set any other status.
+4. **Keep phases plan-sized** — each should produce 2–6 tasks when planned in
+   detail. If a phase is too large, split it. If too small, merge with an
+   adjacent phase.
+5. **Each phase delivers incremental value where possible** — avoid phases that
+   produce nothing usable on their own. Prefer smaller phases over larger ones;
+   if in doubt, split.
+6. **Objective describes outcome** — what is true when the phase is done, not
+   what activities occur during it.
+7. **Do not plan the tasks within each phase** — that is `/pace:plan`'s job.
+   Keep phases at the objective/deliverable level.
+8. **Record the ordering rationale** — explain in `## Notes` why the phases
+   are ordered the way they are, and note any risks or considerations for
+   later planning.
+
+When done, report back a one-line summary: how many phases, their titles, and
+any risks flagged.
 ---
 
-## Stage 6 — Approval
+Wait for the agent to complete.
 
-Once the synthesiser completes, read `.pace/ROADMAP.md` and present it to the
+## Stage 4 — Approval
+
+Once the planner completes, read `.pace/ROADMAP.md` and present it to the
 user in full.
 
 Then use the AskUserQuestion tool to ask:
@@ -501,7 +418,7 @@ It is NOT deleted by `/pace:complete`.
 
 **requirements/ directory:** The brief.md and research.md files produced during
 roadmap creation will be overwritten when `/pace:plan` runs for a specific phase.
-This is expected — the roadmap requirements are consumed during synthesis and
+This is expected — the roadmap requirements are consumed during decomposition and
 persisted in ROADMAP.md itself.
 
 </process>
