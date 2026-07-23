@@ -1,9 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SRC_DIR="$SCRIPT_DIR/src"
-
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -47,6 +44,13 @@ else
   DEST="$HOME/.claude"
 fi
 
+# Legacy top-level agent files that older PACE versions shipped directly under
+# agents/ (current versions namespace everything under agents/pace/). Kept in
+# sync with the same list in install.sh so upgrades and removals stay clean.
+LEGACY_AGENT_FILES=(
+  "pace-synthesiser.md"
+)
+
 echo -e "${BOLD}PACE Uninstaller${NC}"
 echo -e "Target: ${YELLOW}${DEST}${NC}"
 echo ""
@@ -67,18 +71,26 @@ else
   echo "  No PACE commands found at ${COMMANDS_DIR}"
 fi
 
-# --- Remove PACE agents (only the ones shipped by PACE) ---
-if [ -d "$SRC_DIR/agents" ]; then
+# --- Remove PACE agents (PACE owns the agents/pace/ namespace) ---
+AGENTS_DIR="$DEST/agents/pace"
+if [ -d "$AGENTS_DIR" ]; then
   while IFS= read -r file; do
-    rel="${file#$SRC_DIR/agents/}"
-    dest="$DEST/agents/$rel"
-    if [ -e "$dest" ]; then
-      rm "$dest"
-      echo -e "  ${RED}✗${NC} agents/$rel"
-      REMOVED=$((REMOVED + 1))
-    fi
-  done < <(find "$SRC_DIR/agents" -name "*.md" -type f)
+    rel="${file#$DEST/agents/}"
+    rm "$file"
+    echo -e "  ${RED}✗${NC} agents/$rel"
+    REMOVED=$((REMOVED + 1))
+  done < <(find "$AGENTS_DIR" -name "*.md" -type f)
+  find "$AGENTS_DIR" -type d -empty -delete 2>/dev/null || true
 fi
+
+# Legacy top-level PACE agent files from older versions
+for legacy in "${LEGACY_AGENT_FILES[@]}"; do
+  if [ -e "$DEST/agents/$legacy" ]; then
+    rm "$DEST/agents/$legacy"
+    echo -e "  ${RED}✗${NC} agents/$legacy"
+    REMOVED=$((REMOVED + 1))
+  fi
+done
 
 # --- Remove PACE lib scripts ---
 LIB_DIR="$DEST/lib/pace"

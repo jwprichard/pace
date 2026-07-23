@@ -56,6 +56,14 @@ else
   DEST="$HOME/.claude"
 fi
 
+# Legacy top-level agent files that older PACE versions shipped directly under
+# agents/ (current versions namespace everything under agents/pace/). These are
+# removed on install/uninstall so a rename or retirement never leaves a stale
+# file behind. Add a filename here whenever a top-level agent is retired.
+LEGACY_AGENT_FILES=(
+  "pace-synthesiser.md"
+)
+
 echo -e "${BOLD}PACE Installer v${VERSION}${NC}"
 echo -e "Target: ${GREEN}${DEST}${NC}"
 echo ""
@@ -103,6 +111,29 @@ if [ ${#CONFLICTS[@]} -gt 0 ]; then
     exit 1
   fi
 fi
+
+# --- Clean stale PACE files ---
+# Runs only after the conflict prompt is resolved, so an aborted install
+# never deletes anything. PACE owns the commands/pace/ and agents/pace/
+# namespaces entirely, so clearing their *.md before copying fresh makes
+# install idempotent — any command or agent retired in a newer version is
+# removed rather than left orphaned. The shared top-level agents/ directory
+# is touched only for the explicit LEGACY_AGENT_FILES list.
+clean_stale() {
+  for ns in "commands/pace" "agents/pace"; do
+    if [ -d "$DEST/$ns" ]; then
+      find "$DEST/$ns" -name "*.md" -type f -delete
+    fi
+  done
+  for legacy in "${LEGACY_AGENT_FILES[@]}"; do
+    if [ -e "$DEST/agents/$legacy" ]; then
+      rm -f "$DEST/agents/$legacy"
+      echo -e "  ${YELLOW}−${NC} removed stale agents/$legacy"
+    fi
+  done
+}
+
+clean_stale
 
 # --- Install ---
 INSTALLED=0
